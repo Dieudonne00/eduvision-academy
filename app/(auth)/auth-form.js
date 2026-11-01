@@ -14,7 +14,7 @@ export default function AuthForm({ action, submitLabel, children }) {
     <form action={formAction} className="stack">
       {children}
       {state?.error && <p className="error">{state.error}</p>}
-      <button type="submit" className="btn" disabled={pending}>
+      <button type="submit" className="btn btn-primary btn-lg btn-block" disabled={pending}>
         {pending ? "Please wait…" : submitLabel}
       </button>
     </form>
