@@ -6,6 +6,16 @@ import { createServerClient } from "@supabase/ssr";
 const PRIVATE_PATHS = ["/dashboard", "/admin"];
 
 export async function proxy(request) {
+  try {
+    return await refreshSession(request);
+  } catch (error) {
+    // Never take the whole site down because of a session problem
+    console.error("proxy: session refresh failed", error);
+    return NextResponse.next({ request });
+  }
+}
+
+async function refreshSession(request) {
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(
