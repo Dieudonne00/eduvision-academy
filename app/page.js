@@ -1,15 +1,15 @@
-import ServerStatus from "./server-status";
+import Link from "next/link";
 
 export default function Home() {
   return (
-    <main style={{ minHeight: "100vh", display: "grid", placeItems: "center", textAlign: "center", padding: 16 }}>
+    <main className="hero">
       <div>
-        <h1 style={{ fontSize: "clamp(2rem, 6vw, 3.5rem)", margin: "0 0 .5rem" }}>EduVision Academy</h1>
-        <p style={{ color: "var(--muted)", margin: ".25rem 0" }}>
-          Learn languages through audio &amp; video lessons, quizzes and exams.
-        </p>
-        <p style={{ color: "var(--muted)", margin: ".25rem 0" }}>Coming soon.</p>
-        <ServerStatus />
+        <h1>EduVision Academy</h1>
+        <p className="muted">Learn languages through audio &amp; video lessons, quizzes and exams.</p>
+        <div className="actions">
+          <Link href="/signup" className="btn">Start learning</Link>
+          <Link href="/login" className="btn btn-outline">Log in</Link>
+        </div>
       </div>
     </main>
   );
