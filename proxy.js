@@ -4,7 +4,7 @@ import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/lib/supabase/config";
 
 // Runs before every page request: keeps the Supabase login session fresh
 // and sends signed-out visitors away from private areas.
-const PRIVATE_PATHS = ["/dashboard", "/admin"];
+const PRIVATE_PATHS = ["/dashboard", "/admin", "/checkout", "/reset-password"];
 
 export async function proxy(request) {
   try {

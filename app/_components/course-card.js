@@ -13,7 +13,7 @@ export default function CourseCard({ course }) {
         <li><Icon name="headphones" size={14} /> Audio</li>
         <li><Icon name="checkCircle" size={14} /> Quizzes</li>
       </ul>
-      <Link href="/signup" className="course-link">
+      <Link href={`/checkout/${course.slug}`} className="course-link">
         Enroll now <Icon name="arrowRight" size={16} />
       </Link>
     </article>

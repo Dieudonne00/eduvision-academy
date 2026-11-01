@@ -494,5 +494,87 @@ input, select, textarea {
 input::placeholder { color: #9fb2ba; }
 input:focus, select:focus, textarea:focus { outline: none; border-color: var(--teal); box-shadow: 0 0 0 4px var(--teal-50); }
 
-/* ── Simple inner pages (dashboard, admin) ───────────────── */
+.label-row { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
+.label-row a { font-weight: 600; text-decoration: none; }
+
+/* ── Simple inner pages (admin) ──────────────────────────── */
 .page { max-width: 1200px; margin: 0 auto; padding: 48px 16px 96px; min-height: 50vh; }
+
+/* ── Checkout ────────────────────────────────────────────── */
+.checkout { background: var(--tint); padding: 48px 0 96px; min-height: 70vh; }
+.checkout-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 32px; align-items: start; }
+.checkout-main {
+  padding: 36px; background: #fff; border: 1px solid var(--line); border-radius: 24px; box-shadow: var(--shadow-sm);
+}
+.checkout-main h1 { font-size: clamp(1.7rem, 3.4vw, 2.4rem); }
+.back-link { display: inline-flex; gap: .4rem; margin-bottom: 1.2rem; font-weight: 600; font-size: .9rem; text-decoration: none; color: var(--muted); }
+.back-link:hover { color: var(--teal); }
+.checkout-step { display: flex; align-items: center; gap: .7rem; font-size: 1.2rem; margin-top: 2rem; }
+.checkout-step span {
+  display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%;
+  background: var(--teal); color: #fff; font-size: .9rem;
+}
+.pay-methods { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 1rem 0; }
+.pay-method {
+  padding: 16px; border: 1.5px dashed var(--line); border-radius: 14px; background: var(--tint); text-align: center;
+}
+.pay-method strong { display: block; color: var(--ink); }
+.pay-method small { color: var(--muted); font-size: .78rem; }
+.pay-note { font-size: .95rem; padding: 14px 16px; border-radius: 12px; background: var(--orange-50); color: #8a4a20; }
+.checkout-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 1.4rem; }
+.checkout-actions form { display: contents; }
+
+.status-box {
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  padding: 20px; border-radius: 16px; margin: 1.4rem 0 .5rem;
+}
+.status-box > div { flex: 1; min-width: 200px; }
+.status-box h3 { margin: 0 0 .2rem; }
+.status-box p { margin: 0; font-size: .95rem; }
+.status-box.success { background: var(--success-50); color: var(--success); }
+.status-box.pending { background: var(--orange-50); color: var(--orange-600); }
+
+.checkout-summary {
+  position: sticky; top: 96px;
+  padding: 28px; background: #fff; border: 1px solid var(--line); border-radius: 24px; box-shadow: var(--shadow);
+}
+.checkout-summary h3 { font-size: 1.35rem; margin: .3rem 0 .5rem; }
+.checkout-summary p { font-size: .95rem; }
+.summary-list { list-style: none; padding: 16px 0; margin: 0; display: grid; gap: .6rem; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.summary-list li { display: flex; align-items: center; gap: .6rem; font-weight: 600; color: var(--ink); font-size: .92rem; }
+.summary-list svg { color: var(--accent); }
+.summary-price { display: flex; justify-content: space-between; align-items: baseline; padding: 16px 0 8px; }
+.summary-price span { color: var(--muted); font-weight: 600; }
+.summary-price strong { font-size: 1.4rem; color: var(--ink); }
+@media (max-width: 900px) {
+  .checkout-grid { grid-template-columns: 1fr; }
+  .checkout-summary { position: static; order: -1; }
+  .checkout-main { padding: 24px 20px; }
+}
+@media (max-width: 560px) {
+  .pay-methods { grid-template-columns: 1fr; }
+  .checkout-actions .btn { flex: 1 1 100%; }
+}
+
+/* ── Dashboard ───────────────────────────────────────────── */
+.dashboard { min-height: 70vh; background: var(--tint); padding-bottom: 96px; }
+.dash-hero {
+  padding: 48px 0 72px; color: rgb(255 255 255 / 85%);
+  background: linear-gradient(140deg, var(--teal) 0%, var(--teal-700) 70%, var(--teal-900) 100%);
+}
+.dash-hero h1 { color: #fff; font-size: clamp(1.8rem, 4vw, 2.6rem); }
+.dash-hero p { margin: 0; }
+.dash-body { margin-top: -40px; }
+.dash-body .notice { background: #fff; box-shadow: var(--shadow-sm); border-left: 4px solid var(--success); }
+.dash-title { font-size: 1.3rem; margin: 2rem 0 1.2rem; }
+.dash-body > .dash-title:first-child { margin-top: 64px; }
+.empty-state {
+  display: flex; flex-direction: column; align-items: center; text-align: center; gap: .3rem;
+  padding: 56px 24px; background: #fff; border: 1.5px dashed var(--line); border-radius: 24px; color: var(--teal);
+}
+.empty-state h3 { margin-top: .6rem; }
+.empty-state p { color: var(--body); }
+.pill-pending { background: var(--orange-50); color: var(--orange-600); }
+.course-card .pill { align-self: flex-start; margin-bottom: .4rem; }
+.card-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.muted-link { color: var(--muted); }

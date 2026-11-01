@@ -1,30 +1,25 @@
 import Link from "next/link";
-import AuthForm from "../auth-form";
-import { signUp } from "../actions";
+import { redirect } from "next/navigation";
+import SignupForm from "./signup-form";
+import { safeNext } from "@/lib/safe-next";
+import { getSession } from "@/lib/auth";
 
 export const metadata = { title: "Sign up" };
 
-export default function SignupPage() {
+export default async function SignupPage({ searchParams }) {
+  const next = safeNext((await searchParams).next);
+  const enrolling = next.startsWith("/checkout/");
+  if (await getSession()) redirect(next);
+
   return (
     <div className="auth-card">
       <h1>Create your account</h1>
-      <p className="muted">Start learning with audio &amp; video lessons.</p>
-      <AuthForm action={signUp} submitLabel="Create account">
-        <label>
-          Full name
-          <input name="full_name" autoComplete="name" placeholder="Your full name" required />
-        </label>
-        <label>
-          Email
-          <input name="email" type="email" autoComplete="email" placeholder="you@example.com" required />
-        </label>
-        <label>
-          Password
-          <input name="password" type="password" autoComplete="new-password" minLength={8} placeholder="At least 8 characters" required />
-        </label>
-      </AuthForm>
+      <p className="muted">
+        {enrolling ? "Create your account to enroll. It takes less than a minute." : "Start learning with audio & video lessons."}
+      </p>
+      <SignupForm next={next} />
       <p className="muted small">
-        Already have an account? <Link href="/login">Log in</Link>
+        Already have an account? <Link href={`/login?next=${encodeURIComponent(next)}`}>Log in</Link>
       </p>
     </div>
   );
