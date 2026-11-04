@@ -2,7 +2,8 @@ import Link from "next/link";
 import Image from "next/image";
 import Icon, { WhatsAppIcon } from "./_components/icon";
 import CourseCard from "./_components/course-card";
-import { site, courses } from "@/lib/site";
+import { site } from "@/lib/site";
+import { getPublishedCourses } from "@/lib/courses";
 
 import heroPhoto from "@/public/images/class-photography.webp";
 import instructorPhoto from "@/public/images/instructor-studio.webp";
@@ -24,7 +25,10 @@ const reasons = [
   { icon: "wallet", title: "Affordable fees", text: "Quality education priced for students and working people." },
 ];
 
-export default function Home() {
+export default async function Home() {
+  const courses = await getPublishedCourses();
+  const languages = courses.filter((c) => c.category === "Languages").length;
+
   return (
     <main>
       {/* ── Hero ───────────────────────────────────────────── */}
@@ -85,8 +89,8 @@ export default function Home() {
       {/* ── Highlights strip ─────────────────────────────── */}
       <section className="strip">
         <div className="container strip-grid">
-          <div><strong>6</strong><span>courses to choose from</span></div>
-          <div><strong>4</strong><span>languages taught</span></div>
+          <div><strong>{courses.length}</strong><span>courses to choose from</span></div>
+          <div><strong>{languages}</strong><span>languages taught</span></div>
           <div><strong>24/7</strong><span>online access</span></div>
           <div><strong>100%</strong><span>automatic quiz marking</span></div>
         </div>

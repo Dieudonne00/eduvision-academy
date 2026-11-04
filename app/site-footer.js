@@ -1,10 +1,13 @@
 import Link from "next/link";
 import Image from "next/image";
 import Icon, { WhatsAppIcon } from "./_components/icon";
-import { site, courses } from "@/lib/site";
+import { site } from "@/lib/site";
+import { getPublishedCourses } from "@/lib/courses";
 import logo from "@/public/images/logo.png";
 
-export default function SiteFooter() {
+export default async function SiteFooter() {
+  const courses = await getPublishedCourses();
+
   return (
     <footer className="site-footer">
       <div className="container footer-grid">
@@ -22,7 +25,7 @@ export default function SiteFooter() {
           <h3>Courses</h3>
           <ul>
             {courses.map((c) => (
-              <li key={c.slug}><Link href={`/courses#${c.slug}`}>{c.title}</Link></li>
+              <li key={c.slug}><Link href={`/courses/${c.slug}`}>{c.title}</Link></li>
             ))}
           </ul>
         </div>

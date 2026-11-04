@@ -1,15 +1,16 @@
 import Link from "next/link";
 import CourseCard from "../_components/course-card";
 import Icon from "../_components/icon";
-import { courses } from "@/lib/site";
+import { getPublishedCourses } from "@/lib/courses";
 
 export const metadata = {
   title: "Courses",
   description: "English, French, Swahili, Chinese, Photography & Videography, and Traffic Rules courses with video and audio lessons.",
 };
 
-export default function CoursesPage() {
-  const groups = [...new Set(courses.map((c) => c.category))];
+export default async function CoursesPage() {
+  const courses = await getPublishedCourses();
+  const groups = [...new Set(courses.map((c) => c.category || "Courses"))];
 
   return (
     <main>
@@ -17,7 +18,7 @@ export default function CoursesPage() {
         <div className="container">
           <span className="kicker">Courses</span>
           <h1>Find the course that moves you forward</h1>
-          <p>Each course includes video and audio lessons, practice quizzes after every unit, and a final exam with a certificate.</p>
+          <p>Each course is organised in chapters of video and audio lessons, with quizzes and a final exam with a certificate.</p>
         </div>
       </section>
 
@@ -26,7 +27,7 @@ export default function CoursesPage() {
           <div className="container">
             <h2 className="group-title">{group}</h2>
             <div className="course-grid">
-              {courses.filter((c) => c.category === group).map((c) => <CourseCard key={c.slug} course={c} />)}
+              {courses.filter((c) => (c.category || "Courses") === group).map((c) => <CourseCard key={c.slug} course={c} />)}
             </div>
           </div>
         </section>

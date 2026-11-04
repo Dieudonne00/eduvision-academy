@@ -13,15 +13,29 @@ export default async function DashboardPage({ searchParams }) {
   const firstName = (profile?.full_name || user.email).split(" ")[0];
 
   const supabase = await createClient();
-  const { data: rows } = await supabase
-    .from("enrollments")
-    .select("status, created_at, courses (id, slug, title, description)")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false });
+  const [{ data: rows }, { data: progress }] = await Promise.all([
+    supabase
+      .from("enrollments")
+      .select("status, created_at, courses (id, slug, title, description, category, icon, accent, modules (lessons (id)))")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false }),
+    supabase.from("lesson_progress").select("lesson_id").eq("user_id", user.id),
+  ]);
+  const finished = new Set((progress || []).map((p) => p.lesson_id));
 
   const enrollments = (rows || [])
     .filter((r) => r.courses && r.status !== "cancelled")
-    .map((r) => ({ status: r.status, course: withDisplay(r.courses) }));
+    .map((r) => {
+      const lessonIds = (r.courses.modules || []).flatMap((m) => (m.lessons || []).map((l) => l.id));
+      const done = lessonIds.filter((id) => finished.has(id)).length;
+      return {
+        status: r.status,
+        course: withDisplay(r.courses),
+        total: lessonIds.length,
+        done,
+        percent: lessonIds.length ? Math.round((done / lessonIds.length) * 100) : 0,
+      };
+    });
 
   return (
     <main className="dashboard">
@@ -53,7 +67,7 @@ export default async function DashboardPage({ searchParams }) {
           </div>
         ) : (
           <div className="course-grid">
-            {enrollments.map(({ status, course }) => (
+            {enrollments.map(({ status, course, total, done, percent }) => (
               <article key={course.slug} className={`course-card accent-${course.accent}`}>
                 <div className="course-icon"><Icon name={course.icon} size={26} /></div>
                 {status === "active"
@@ -62,7 +76,19 @@ export default async function DashboardPage({ searchParams }) {
                 <h3>{course.title}</h3>
                 <p>{course.summary}</p>
                 {status === "active" ? (
-                  <span className="course-link muted-link">Lessons coming soon</span>
+                  total > 0 ? (
+                    <>
+                      <div className="progress">
+                        <div className="progress-bar"><span style={{ width: `${percent}%` }} /></div>
+                        <small>{percent}% complete · {done}/{total} lessons</small>
+                      </div>
+                      <Link href={`/learn/${course.slug}`} className="btn btn-primary btn-sm">
+                        {done === 0 ? "Start learning" : percent === 100 ? "Review course" : "Continue learning"}
+                      </Link>
+                    </>
+                  ) : (
+                    <span className="course-link muted-link">Lessons coming soon</span>
+                  )
                 ) : (
                   <div className="card-actions">
                     <Link href={`/checkout/${course.slug}`} className="btn btn-primary btn-sm">Complete payment</Link>
