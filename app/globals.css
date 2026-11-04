@@ -694,7 +694,7 @@ select { appearance: auto; }
 .course-hero-grid { display: grid; grid-template-columns: 1.6fr 1fr; gap: 48px; align-items: start; }
 .course-hero h1 { color: #fff; font-size: clamp(2rem, 4.4vw, 3.2rem); margin-top: .4rem; }
 .course-hero .lead { color: rgb(255 255 255 / 85%); }
-.back-link.light { color: rgb(255 255 255 / 75%); }
+.back-link.light { display: flex; width: fit-content; color: rgb(255 255 255 / 75%); }
 .back-link.light:hover { color: #fff; }
 .course-hero-cat { display: inline-block; padding: .3rem .8rem; border-radius: 999px; background: rgb(255 255 255 / 14%); color: #fff; font-size: .8rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
 .course-facts { display: flex; flex-wrap: wrap; gap: .6rem 1.4rem; list-style: none; padding: 0; margin: 1.6rem 0 0; font-weight: 600; color: #fff; }
