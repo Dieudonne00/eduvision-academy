@@ -26,7 +26,7 @@ export default async function AdminOverview() {
     { label: "Students", value: students, icon: "users", href: "/admin/students" },
     { label: "Awaiting payment", value: pending, icon: "clock", href: "/admin/enrollments", highlight: pending > 0 },
     { label: "Active enrollments", value: active, icon: "checkCircle", href: "/admin/enrollments?status=active" },
-    { label: "Lessons", value: lessons, icon: "play", href: "/admin/courses", sub: `in ${courses} courses` },
+    { label: "Chapters", value: lessons, icon: "play", href: "/admin/courses", sub: `in ${courses} courses` },
   ];
 
   return (

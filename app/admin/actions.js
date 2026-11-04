@@ -5,9 +5,10 @@ import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { parseYouTubeId } from "@/lib/youtube";
-import { COURSE_ICONS } from "@/lib/courses";
 
-// Every action re-checks admin rights; the database rules check them again.
+// A course is a list of chapters; each chapter is one video or one audio.
+// (In the database a chapter is a row in `lessons`, all under one `modules` row per course.)
+
 async function adminClient() {
   await requireAdmin();
   return createClient();
@@ -34,34 +35,16 @@ function parsePrice(raw) {
   const value = String(raw || "").replace(/[\s,]/g, "");
   if (value === "") return { price: null };
   const price = Number(value);
-  return Number.isFinite(price) && price >= 0 ? { price } : { error: "Price must be a number (leave empty for 'price on request')." };
+  return Number.isFinite(price) && price >= 0 ? { price } : { error: "Price must be a number, e.g. 25000." };
 }
 
-function refreshCourse(id) {
-  revalidatePath("/admin", "layout");
-  revalidatePath("/courses", "layout");
-  revalidatePath("/");
-  return `/admin/courses/${id}`;
+function refresh() {
+  revalidatePath("/", "layout");
 }
 
-// Rewrite positions 0..n after moving one item up or down among its siblings
-async function move(supabase, table, parentColumn, id, direction) {
-  const { data: item } = await supabase.from(table).select(`id, ${parentColumn}`).eq("id", id).single();
-  const { data: siblings } = await supabase
-    .from(table).select("id, position").eq(parentColumn, item[parentColumn]).order("position").order("id");
-  const order = siblings.map((s) => s.id);
-  const i = order.indexOf(id);
-  const j = direction === "up" ? i - 1 : i + 1;
-  if (j < 0 || j >= order.length) return;
-  [order[i], order[j]] = [order[j], order[i]];
-  await Promise.all(order.map((sid, position) => supabase.from(table).update({ position }).eq("id", sid)));
-}
-
-// ── Enrollments / payments ──────────────────────────────────
+// ── Payments ────────────────────────────────────────────────
 
 export async function setEnrollmentStatus(formData) {
-  const userId = text(formData, "user_id");
-  const courseId = text(formData, "course_id");
   const status = text(formData, "status");
   const returnTo = text(formData, "return_to") || "/admin/enrollments";
   if (!["active", "pending", "cancelled"].includes(status)) back(returnTo, { error: "Unknown status" });
@@ -70,25 +53,36 @@ export async function setEnrollmentStatus(formData) {
   const { error } = await supabase
     .from("enrollments")
     .update({ status, paid_at: status === "active" ? new Date().toISOString() : null })
-    .eq("user_id", userId)
-    .eq("course_id", courseId);
+    .eq("user_id", text(formData, "user_id"))
+    .eq("course_id", text(formData, "course_id"));
 
-  revalidatePath("/admin", "layout");
+  refresh();
   back(returnTo, error ? { error: error.message } : { saved: status });
 }
 
-// ── Courses ─────────────────────────────────────────────────
+// ── Course ──────────────────────────────────────────────────
+
+function courseFields(formData) {
+  const { price, error } = parsePrice(formData.get("price"));
+  return {
+    error: !text(formData, "title") ? "Give the course a title." : error,
+    fields: {
+      title: text(formData, "title"),
+      description: text(formData, "description"),
+      cover_url: text(formData, "cover_url") || null,
+      price,
+    },
+  };
+}
 
 export async function createCourse(formData) {
-  const title = text(formData, "title");
-  if (!title) back("/admin/courses", { error: "Give the course a title." });
-  const { price, error: priceError } = parsePrice(formData.get("price"));
-  if (priceError) back("/admin/courses", { error: priceError });
+  const { error: invalid, fields } = courseFields(formData);
+  if (invalid) back("/admin/courses", { error: invalid });
 
   const supabase = await adminClient();
 
-  // Unique web address: french, french-2, french-3…
-  const base = slugify(text(formData, "slug") || title);
+  // Unique web address: german, german-2…
+  const base = slugify(fields.title);
   const { data: taken } = await supabase.from("courses").select("slug").like("slug", `${base}%`);
   const used = new Set((taken || []).map((t) => t.slug));
   let slug = base;
@@ -97,60 +91,35 @@ export async function createCourse(formData) {
   const { count } = await supabase.from("courses").select("id", { count: "exact", head: true });
   const { data: course, error } = await supabase
     .from("courses")
-    .insert({
-      title,
-      slug,
-      category: text(formData, "category"),
-      price,
-      currency: "RWF",
-      published: false,
-      position: (count ?? 0) + 1,
-    })
+    .insert({ ...fields, slug, currency: "RWF", published: false, position: (count ?? 0) + 1 })
     .select("id")
     .single();
   if (error) back("/admin/courses", { error: error.message });
 
-  refreshCourse(course.id);
+  refresh();
   back(`/admin/courses/${course.id}`, { saved: "created" });
 }
 
 export async function updateCourse(formData) {
   const id = text(formData, "id");
-  const here = `/admin/courses/${id}`;
-  const { price, error: priceError } = parsePrice(formData.get("price"));
-  if (priceError) back(here, { error: priceError });
-
-  const icon = COURSE_ICONS.includes(text(formData, "icon")) ? text(formData, "icon") : "book";
-  const accent = text(formData, "accent") === "orange" ? "orange" : "teal";
-  const outcomes = text(formData, "outcomes").split("\n").map((s) => s.trim()).filter(Boolean);
+  const { error: invalid, fields } = courseFields(formData);
+  if (invalid) back(`/admin/courses/${id}`, { error: invalid });
 
   const supabase = await adminClient();
   const { error } = await supabase
     .from("courses")
-    .update({
-      title: text(formData, "title"),
-      description: text(formData, "description"),
-      category: text(formData, "category"),
-      language: text(formData, "language"),
-      level: text(formData, "level"),
-      price,
-      currency: (text(formData, "currency") || "RWF").toUpperCase(),
-      icon,
-      accent,
-      outcomes,
-      published: formData.get("published") === "on",
-    })
+    .update({ ...fields, published: formData.get("published") === "on" })
     .eq("id", id);
 
-  refreshCourse(id);
-  back(here, error ? { error: error.message } : { saved: "course" });
+  refresh();
+  back(`/admin/courses/${id}`, error ? { error: error.message } : { saved: "course" });
 }
 
 export async function deleteCourse(formData) {
   const id = text(formData, "course_id");
   const supabase = await adminClient();
 
-  // Never delete a course students are enrolled in: that would erase their access and history
+  // Never delete a course students are enrolled in: that would erase their access
   const { count } = await supabase.from("enrollments").select("user_id", { count: "exact", head: true }).eq("course_id", id);
   if (count) {
     back(`/admin/courses/${id}`, { error: `${count} student(s) are enrolled, so this course can't be deleted. Untick "Published" to hide it instead.` });
@@ -158,98 +127,57 @@ export async function deleteCourse(formData) {
 
   const { error } = await supabase.from("courses").delete().eq("id", id);
   if (error) back(`/admin/courses/${id}`, { error: error.message });
-  refreshCourse(id);
+  refresh();
   back("/admin/courses", { saved: "deleted" });
 }
 
 // ── Chapters ────────────────────────────────────────────────
 
-export async function addChapter(formData) {
-  const courseId = text(formData, "course_id");
+function chapterFields(formData, here) {
   const title = text(formData, "title");
-  const here = `/admin/courses/${courseId}`;
   if (!title) back(here, { error: "Give the chapter a title." });
 
-  const supabase = await adminClient();
-  const { count } = await supabase.from("modules").select("id", { count: "exact", head: true }).eq("course_id", courseId);
-  const { error } = await supabase
-    .from("modules")
-    .insert({ course_id: courseId, title, description: text(formData, "description"), position: count ?? 0 });
-
-  refreshCourse(courseId);
-  back(here, error ? { error: error.message } : { saved: "chapter" });
-}
-
-export async function updateChapter(formData) {
-  const courseId = text(formData, "course_id");
-  const supabase = await adminClient();
-  const { error } = await supabase
-    .from("modules")
-    .update({ title: text(formData, "title"), description: text(formData, "description") })
-    .eq("id", text(formData, "id"));
-  refreshCourse(courseId);
-  back(`/admin/courses/${courseId}`, error ? { error: error.message } : { saved: "chapter-updated" });
-}
-
-export async function moveChapter(formData) {
-  const courseId = text(formData, "course_id");
-  const supabase = await adminClient();
-  await move(supabase, "modules", "course_id", text(formData, "id"), text(formData, "direction"));
-  refreshCourse(courseId);
-  back(`/admin/courses/${courseId}`);
-}
-
-export async function deleteChapter(formData) {
-  const courseId = text(formData, "course_id");
-  const supabase = await adminClient();
-  const { error } = await supabase.from("modules").delete().eq("id", text(formData, "id"));
-  refreshCourse(courseId);
-  back(`/admin/courses/${courseId}`, error ? { error: error.message } : { saved: "deleted" });
-}
-
-// ── Lessons ─────────────────────────────────────────────────
-
-function lessonFields(formData, here) {
   const kind = text(formData, "kind") === "audio" ? "audio" : "video";
-  const title = text(formData, "title");
-  if (!title) back(here, { error: "Give the lesson a title." });
-
-  let media;
   if (kind === "video") {
     const youtubeId = parseYouTubeId(formData.get("youtube"));
-    if (!youtubeId) back(here, { error: "That doesn't look like a YouTube video ID or link." });
-    media = { youtube_id: youtubeId, audio_path: null };
-  } else {
-    const audio = text(formData, "audio_url");
-    if (!/^https:\/\//.test(audio)) back(here, { error: "Paste the audio file's https:// link." });
-    media = { youtube_id: null, audio_path: audio };
+    if (!youtubeId) back(here, { error: "Paste the YouTube link of the video (e.g. https://youtu.be/…)." });
+    return { lesson: { title, kind }, media: { youtube_id: youtubeId, audio_path: null } };
   }
-
-  const minutes = Number(formData.get("minutes") || 0);
-  return {
-    lesson: {
-      title,
-      kind,
-      is_preview: formData.get("is_preview") === "on",
-      duration_seconds: minutes > 0 ? Math.round(minutes * 60) : null,
-    },
-    media: { ...media, notes: text(formData, "content") },
-  };
+  const audio = text(formData, "audio_path");
+  if (!audio) back(here, { error: "Upload the audio file first, then click Add." });
+  return { lesson: { title, kind }, media: { youtube_id: null, audio_path: audio } };
 }
 
-export async function addLesson(formData) {
+// Every course keeps its chapters in one container row; create it the first time.
+async function courseModuleId(supabase, courseId) {
+  const { data: existing } = await supabase
+    .from("modules").select("id").eq("course_id", courseId).order("position").limit(1).maybeSingle();
+  if (existing) return existing.id;
+  const { data: created, error } = await supabase
+    .from("modules").insert({ course_id: courseId, title: "Chapters", position: 0 }).select("id").single();
+  if (error) throw error;
+  return created.id;
+}
+
+async function courseLessons(supabase, courseId) {
+  const { data } = await supabase
+    .from("lessons").select("id, position, modules!inner (course_id, position)")
+    .eq("modules.course_id", courseId);
+  return (data || []).sort((a, b) => a.modules.position - b.modules.position || a.position - b.position);
+}
+
+export async function addChapter(formData) {
   const courseId = text(formData, "course_id");
-  const moduleId = text(formData, "module_id");
   const here = `/admin/courses/${courseId}`;
-  const { lesson, media } = lessonFields(formData, here);
+  const { lesson, media } = chapterFields(formData, here);
 
   const supabase = await adminClient();
-  const { count } = await supabase.from("lessons").select("id", { count: "exact", head: true }).eq("module_id", moduleId);
+  const moduleId = await courseModuleId(supabase, courseId);
+  const existing = await courseLessons(supabase, courseId);
+  const position = existing.reduce((max, l) => Math.max(max, l.position + 1), 0);
+
   const { data: row, error } = await supabase
-    .from("lessons")
-    .insert({ ...lesson, module_id: moduleId, position: count ?? 0 })
-    .select("id")
-    .single();
+    .from("lessons").insert({ ...lesson, module_id: moduleId, position }).select("id").single();
   if (error) back(here, { error: error.message });
 
   const { error: mediaError } = await supabase.from("lesson_media").insert({ lesson_id: row.id, ...media });
@@ -258,37 +186,48 @@ export async function addLesson(formData) {
     back(here, { error: mediaError.message });
   }
 
-  refreshCourse(courseId);
-  back(here, { saved: "lesson" });
+  refresh();
+  back(here, { saved: "chapter" });
 }
 
-export async function updateLesson(formData) {
+export async function updateChapter(formData) {
   const courseId = text(formData, "course_id");
   const id = text(formData, "id");
   const here = `/admin/courses/${courseId}`;
-  const { lesson, media } = lessonFields(formData, here);
+  const { lesson, media } = chapterFields(formData, here);
 
   const supabase = await adminClient();
   const { error } = await supabase.from("lessons").update(lesson).eq("id", id);
   if (error) back(here, { error: error.message });
   const { error: mediaError } = await supabase.from("lesson_media").upsert({ lesson_id: id, ...media });
 
-  refreshCourse(courseId);
-  back(here, mediaError ? { error: mediaError.message } : { saved: "lesson-updated" });
+  refresh();
+  back(here, mediaError ? { error: mediaError.message } : { saved: "chapter-updated" });
 }
 
-export async function moveLesson(formData) {
+export async function moveChapter(formData) {
   const courseId = text(formData, "course_id");
+  const id = text(formData, "id");
   const supabase = await adminClient();
-  await move(supabase, "lessons", "module_id", text(formData, "id"), text(formData, "direction"));
-  refreshCourse(courseId);
+
+  const order = (await courseLessons(supabase, courseId)).map((l) => l.id);
+  const i = order.indexOf(id);
+  const j = text(formData, "direction") === "up" ? i - 1 : i + 1;
+  if (i !== -1 && j >= 0 && j < order.length) {
+    [order[i], order[j]] = [order[j], order[i]];
+    const moduleId = await courseModuleId(supabase, courseId);
+    // Rewrite positions 0..n (and gather everything into the course's chapter list)
+    await Promise.all(order.map((lid, position) => supabase.from("lessons").update({ position, module_id: moduleId }).eq("id", lid)));
+  }
+
+  refresh();
   back(`/admin/courses/${courseId}`);
 }
 
-export async function deleteLesson(formData) {
+export async function deleteChapter(formData) {
   const courseId = text(formData, "course_id");
   const supabase = await adminClient();
   const { error } = await supabase.from("lessons").delete().eq("id", text(formData, "id"));
-  refreshCourse(courseId);
+  refresh();
   back(`/admin/courses/${courseId}`, error ? { error: error.message } : { saved: "deleted" });
 }

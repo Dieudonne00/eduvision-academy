@@ -80,14 +80,14 @@ export default async function DashboardPage({ searchParams }) {
                     <>
                       <div className="progress">
                         <div className="progress-bar"><span style={{ width: `${percent}%` }} /></div>
-                        <small>{percent}% complete · {done}/{total} lessons</small>
+                        <small>{percent}% complete · {done}/{total} chapters</small>
                       </div>
                       <Link href={`/learn/${course.slug}`} className="btn btn-primary btn-sm">
                         {done === 0 ? "Start learning" : percent === 100 ? "Review course" : "Continue learning"}
                       </Link>
                     </>
                   ) : (
-                    <span className="course-link muted-link">Lessons coming soon</span>
+                    <span className="course-link muted-link">Chapters coming soon</span>
                   )
                 ) : (
                   <div className="card-actions">

@@ -3,12 +3,10 @@ const messages = {
   active: "Payment confirmed. The student now has access to the course.",
   pending: "Marked as awaiting payment.",
   cancelled: "Enrollment cancelled.",
-  created: "Course created. Fill in the details, add chapters and lessons, then tick Published.",
+  created: "Course created! Now add Chapter 1 below.",
   course: "Course saved.",
-  chapter: "Chapter added.",
+  chapter: "Chapter added. Add the next one, or tick Published when the course is ready.",
   "chapter-updated": "Chapter saved.",
-  lesson: "Lesson added.",
-  "lesson-updated": "Lesson saved.",
   deleted: "Deleted.",
 };
 

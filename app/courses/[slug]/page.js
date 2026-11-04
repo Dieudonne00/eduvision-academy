@@ -1,13 +1,16 @@
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import Icon from "@/app/_components/icon";
-import { getCourseOutline, formatPrice, formatDuration } from "@/lib/courses";
+import { getCourseOutline, formatPrice } from "@/lib/courses";
 import { getSession } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
 export async function generateMetadata({ params }) {
   const course = await getCourseOutline((await params).slug);
-  return course ? { title: course.title, description: course.summary } : {};
+  return course
+    ? { title: course.title, description: course.summary, openGraph: course.cover_url ? { images: [course.cover_url] } : undefined }
+    : {};
 }
 
 export default async function CoursePage({ params }) {
@@ -26,9 +29,9 @@ export default async function CoursePage({ params }) {
   }
 
   const price = formatPrice(course.price, course.currency);
-  const total = formatDuration(course.totalSeconds);
-  const videos = course.lessons.filter((l) => l.kind === "video").length;
-  const audios = course.lessons.length - videos;
+  const chapters = course.lessons;
+  const videos = chapters.filter((l) => l.kind === "video").length;
+  const audios = chapters.length - videos;
 
   return (
     <main>
@@ -36,32 +39,36 @@ export default async function CoursePage({ params }) {
         <div className="container course-hero-grid">
           <div>
             <Link href="/courses" className="back-link light"><span aria-hidden="true">←</span> All courses</Link>
-            <span className="course-hero-cat">{course.category}</span>
+            {course.category && <span className="course-hero-cat">{course.category}</span>}
             <h1>{course.title}</h1>
             <p className="lead">{course.summary}</p>
             <ul className="course-facts">
-              <li><Icon name="book" size={16} /> {course.chapters.length} chapters</li>
-              <li><Icon name="play" size={14} /> {course.lessons.length} lessons</li>
-              {total && <li><Icon name="clock" size={16} /> {total}</li>}
-              {course.level && <li><Icon name="award" size={16} /> {course.level}</li>}
+              <li><Icon name="book" size={16} /> {chapters.length} chapter{chapters.length === 1 ? "" : "s"}</li>
+              {videos > 0 && <li><Icon name="play" size={14} /> {videos} video{videos === 1 ? "" : "s"}</li>}
+              {audios > 0 && <li><Icon name="headphones" size={16} /> {audios} audio</li>}
             </ul>
           </div>
 
           <aside className="enroll-card">
-            <span className="enroll-label">Course fee</span>
-            <strong className="enroll-price">{price || "Price on request"}</strong>
-            {enrolled ? (
-              <Link href={`/learn/${course.slug}`} className="btn btn-primary btn-lg btn-block">Continue learning</Link>
-            ) : (
-              <Link href={`/checkout/${course.slug}`} className="btn btn-primary btn-lg btn-block">Enroll now</Link>
+            {course.cover_url && (
+              <div className="enroll-thumb">
+                <Image src={course.cover_url} alt="" fill sizes="(max-width: 900px) 100vw, 420px" priority />
+              </div>
             )}
-            <ul className="summary-list">
-              {videos > 0 && <li><Icon name="play" size={14} /> {videos} video lessons</li>}
-              {audios > 0 && <li><Icon name="headphones" size={16} /> {audios} audio lessons</li>}
-              <li><Icon name="checkCircle" size={16} /> Quizzes marked instantly</li>
-              <li><Icon name="award" size={16} /> Certificate when you pass</li>
-              <li><Icon name="smartphone" size={16} /> Learn on phone or computer</li>
-            </ul>
+            <div className="enroll-body">
+              <span className="enroll-label">Course fee</span>
+              <strong className="enroll-price">{price || "Price on request"}</strong>
+              {enrolled ? (
+                <Link href={`/learn/${course.slug}`} className="btn btn-primary btn-lg btn-block">Continue learning</Link>
+              ) : (
+                <Link href={`/checkout/${course.slug}`} className="btn btn-primary btn-lg btn-block">Enroll now</Link>
+              )}
+              <ul className="summary-list">
+                <li><Icon name="smartphone" size={16} /> Learn on phone or computer</li>
+                <li><Icon name="clock" size={16} /> Study at your own pace</li>
+                <li><Icon name="checkCircle" size={16} /> Track your progress</li>
+              </ul>
+            </div>
           </aside>
         </div>
       </section>
@@ -77,44 +84,22 @@ export default async function CoursePage({ params }) {
         )}
 
         <section>
-          <h2>Course content</h2>
-          <p className="muted">
-            {course.chapters.length} chapters · {course.lessons.length} lessons{total ? ` · ${total} total` : ""}
-          </p>
-
-          {course.chapters.length === 0 ? (
-            <div className="empty-state"><Icon name="book" size={32} /><h3>Lessons are being prepared</h3><p>Enroll now and you&apos;ll be notified when they&apos;re ready.</p></div>
+          <h2>Chapters</h2>
+          {chapters.length === 0 ? (
+            <div className="empty-state"><Icon name="book" size={32} /><h3>Chapters are being prepared</h3><p>Enroll now and start as soon as they&apos;re ready.</p></div>
           ) : (
-            <div className="curriculum">
-              {course.chapters.map((ch, i) => {
-                const chTotal = formatDuration(ch.lessons.reduce((s, l) => s + (l.duration_seconds || 0), 0));
-                return (
-                  <details key={ch.id} className="chapter" open={i === 0}>
-                    <summary>
-                      <span className="chapter-num">{i + 1}</span>
-                      <span className="chapter-title">
-                        <strong>{ch.title}</strong>
-                        <small>{ch.lessons.length} lessons{chTotal ? ` · ${chTotal}` : ""}</small>
-                      </span>
-                      <span className="chev" aria-hidden="true">⌄</span>
-                    </summary>
-                    {ch.description && <p className="chapter-desc">{ch.description}</p>}
-                    <ul className="chapter-lessons">
-                      {ch.lessons.map((l) => (
-                        <li key={l.id}>
-                          <Icon name={l.kind === "video" ? "play" : "headphones"} size={14} />
-                          <span className="grow">{l.title}</span>
-                          {l.is_preview && (
-                            <Link href={`/learn/${course.slug}/${l.id}`} className="preview-tag">Free preview</Link>
-                          )}
-                          {l.duration_seconds ? <small>{Math.round(l.duration_seconds / 60)} min</small> : null}
-                        </li>
-                      ))}
-                    </ul>
-                  </details>
-                );
-              })}
-            </div>
+            <ol className="chapter-list">
+              {chapters.map((ch, i) => (
+                <li key={ch.id}>
+                  <span className="chapter-num">{i + 1}</span>
+                  <span className="grow">
+                    <strong>{ch.title}</strong>
+                    <small>{ch.kind === "video" ? "Video" : "Audio"}</small>
+                  </span>
+                  <Icon name={ch.kind === "video" ? "play" : "headphones"} size={16} />
+                </li>
+              ))}
+            </ol>
           )}
         </section>
       </div>

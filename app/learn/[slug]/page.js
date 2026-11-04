@@ -15,7 +15,7 @@ export default async function LearnCourse({ params }) {
     return (
       <main className="page">
         <h1>{course.title}</h1>
-        <p className="muted">The lessons for this course are being prepared. Check back soon!</p>
+        <p className="muted">The chapters for this course are being prepared. Check back soon!</p>
         <Link href="/dashboard" className="btn btn-primary">Back to My learning</Link>
       </main>
     );
