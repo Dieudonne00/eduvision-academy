@@ -626,6 +626,35 @@ textarea { resize: vertical; }
 .danger-zone { border-color: #f5c2c2; }
 select { appearance: auto; }
 
+/* Payments (admin) */
+.tab-count { display: inline-grid; place-items: center; min-width: 20px; height: 20px; margin-left: .4rem; padding: 0 6px; border-radius: 99px; background: var(--orange); color: #fff; font-size: .72rem; font-weight: 800; }
+.admin-nav .tab-count { margin-left: auto; }
+.pay-cards { display: grid; gap: 14px; }
+.pay-card { padding: 18px; border: 1px solid var(--line); border-radius: 16px; border-left: 4px solid var(--orange); }
+.pay-card.approved { border-left-color: var(--success); }
+.pay-card.rejected { border-left-color: var(--error); }
+.pay-card-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.pay-amount { font-size: 1.35rem; color: var(--ink); }
+.pay-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px 20px; margin: 14px 0; }
+.pay-details dt { font-size: .74rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.pay-details dd { margin: .15rem 0 0; color: var(--ink); font-weight: 600; }
+.pay-details dd small { display: block; color: var(--muted); font-weight: 500; }
+.txid { font-family: ui-monospace, Consolas, monospace; font-size: 1.05rem; letter-spacing: .03em; }
+.pay-review { padding-top: 12px; border-top: 1px dashed var(--line); }
+.pay-buttons { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-start; }
+.pay-buttons form { display: contents; }
+.btn-approve { background: var(--success); color: #fff; }
+.btn-approve:hover { background: #15803d; }
+.reject-box summary { list-style: none; }
+.reject-box summary::-webkit-details-marker { display: none; }
+.reject-form { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.reject-form input { flex: 1 1 280px; }
+.note { font-family: inherit; font-style: italic; }
+.review-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.review-list li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 14px; background: var(--tint); border-radius: 12px; }
+.review-list small { display: block; color: var(--muted); }
+.settings-form { max-width: 560px; }
+
 /* Simple course builder */
 .step-badge { display: inline-grid; place-items: center; width: 28px; height: 28px; margin-right: .5rem; border-radius: 50%; background: var(--orange); color: #fff; font-size: .9rem; vertical-align: 1px; }
 .field-label { display: block; margin-bottom: .4rem; font-size: .9rem; font-weight: 600; color: var(--ink); }
@@ -868,6 +897,28 @@ select { appearance: auto; }
   .lesson-head, .lesson-notes, .lesson-nav { margin-left: 16px; margin-right: 16px; }
   .video-cover-top { height: 48px; }
 }
+
+/* ── MoMo checkout ───────────────────────────────────────── */
+.momo-box { padding: 20px; border-radius: 18px; background: linear-gradient(135deg, #fff8d6 0%, #fff3b0 100%); border: 1px solid #f3dc6b; }
+.momo-rows { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+.momo-rows small { display: block; color: #7a6510; font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+.momo-rows strong { display: block; color: #2b2300; font-size: 1.1rem; overflow-wrap: anywhere; }
+.momo-code { font-size: 1.6rem !important; letter-spacing: .06em; }
+.btn-momo { background: #ffcb05; color: #1d1a00; box-shadow: 0 8px 20px -8px rgb(214 168 0 / 70%); }
+.btn-momo:hover { background: #f0bd00; }
+.momo-ussd { margin: 12px 0 0; font-size: .9rem; color: #4a3f00; }
+.momo-ussd code { padding: .15rem .4rem; border-radius: 6px; background: #fff; font-weight: 700; color: #1d1a00; }
+.copy-btn { color: #7a6510; text-decoration: underline; }
+.pay-form { display: grid; gap: 14px; margin-top: 12px; }
+.help-line { margin-top: 1.4rem; }
+.status-box.rejected { background: var(--error-50); color: var(--error); align-items: flex-start; }
+.status-box.rejected p { color: #7f1d1d; margin-top: .3rem; }
+.summary-thumb { position: relative; aspect-ratio: 16 / 9; margin: -28px -28px 18px; overflow: hidden; border-radius: 24px 24px 0 0; }
+.summary-thumb img { object-fit: cover; }
+.pill-review { background: #fff3c4; color: #8a6d00; }
+.pill-danger { background: var(--error-50); color: var(--error); }
+.reject-note { color: #991b1b; background: var(--error-50); padding: 8px 10px; border-radius: 10px; }
+@media (max-width: 560px) { .momo-rows { grid-template-columns: 1fr 1fr; } .momo-rows > div:first-child { grid-column: 1 / -1; } }
 
 /* ── Dashboard ───────────────────────────────────────────── */
 .dashboard { min-height: 70vh; background: var(--tint); padding-bottom: 96px; }

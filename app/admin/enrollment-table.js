@@ -58,7 +58,7 @@ export default function EnrollmentTable({ rows, returnTo }) {
                 </td>
                 <td className="row-actions">
                   {row.status !== "active" && (
-                    <StatusButton row={row} status="active" label="Confirm payment" variant="btn-primary" returnTo={returnTo} />
+                    <StatusButton row={row} status="active" label="Activate (paid in cash)" variant="btn-primary" returnTo={returnTo} />
                   )}
                   {row.status === "pending" && (
                     <StatusButton row={row} status="cancelled" label="Cancel" variant="btn-ghost" returnTo={returnTo} />

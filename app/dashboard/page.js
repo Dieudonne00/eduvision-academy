@@ -3,9 +3,18 @@ import Icon, { WhatsAppIcon } from "@/app/_components/icon";
 import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { withDisplay } from "@/lib/courses";
+import { latestPayments } from "@/lib/payments";
 import { site } from "@/lib/site";
 
 export const metadata = { title: "My learning" };
+
+// What a pending enrollment is waiting for, based on the latest payment
+function paymentState(status, payment) {
+  if (status === "active") return { pill: "pill-success", label: "Active" };
+  if (payment?.status === "submitted") return { pill: "pill-review", label: "Payment under review" };
+  if (payment?.status === "rejected") return { pill: "pill-danger", label: "Payment not confirmed" };
+  return { pill: "pill-pending", label: "Awaiting payment" };
+}
 
 export default async function DashboardPage({ searchParams }) {
   const params = await searchParams;
@@ -16,26 +25,27 @@ export default async function DashboardPage({ searchParams }) {
   const [{ data: rows }, { data: progress }] = await Promise.all([
     supabase
       .from("enrollments")
-      .select("status, created_at, courses (id, slug, title, description, category, icon, accent, modules (lessons (id)))")
+      .select("status, created_at, courses (id, slug, title, description, category, icon, accent, cover_url, modules (lessons (id)))")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false }),
     supabase.from("lesson_progress").select("lesson_id").eq("user_id", user.id),
   ]);
   const finished = new Set((progress || []).map((p) => p.lesson_id));
+  const visible = (rows || []).filter((r) => r.courses && r.status !== "cancelled");
+  const payments = await latestPayments(supabase, user.id, visible.map((r) => r.courses.id));
 
-  const enrollments = (rows || [])
-    .filter((r) => r.courses && r.status !== "cancelled")
-    .map((r) => {
-      const lessonIds = (r.courses.modules || []).flatMap((m) => (m.lessons || []).map((l) => l.id));
-      const done = lessonIds.filter((id) => finished.has(id)).length;
-      return {
-        status: r.status,
-        course: withDisplay(r.courses),
-        total: lessonIds.length,
-        done,
-        percent: lessonIds.length ? Math.round((done / lessonIds.length) * 100) : 0,
-      };
-    });
+  const enrollments = visible.map((r) => {
+    const lessonIds = (r.courses.modules || []).flatMap((m) => (m.lessons || []).map((l) => l.id));
+    const done = lessonIds.filter((id) => finished.has(id)).length;
+    return {
+      status: r.status,
+      course: withDisplay(r.courses),
+      payment: payments[r.courses.id],
+      total: lessonIds.length,
+      done,
+      percent: lessonIds.length ? Math.round((done / lessonIds.length) * 100) : 0,
+    };
+  });
 
   return (
     <main className="dashboard">
@@ -50,8 +60,11 @@ export default async function DashboardPage({ searchParams }) {
         {params.welcome && <p className="notice">Your email is confirmed. Welcome to EduVision Academy!</p>}
         {params.password && <p className="notice">Your password has been updated.</p>}
         {params.reserved && (
+          <p className="notice">Your place is reserved! We&apos;ll contact you about payment. Questions? WhatsApp us on {site.phone}.</p>
+        )}
+        {params.paid && (
           <p className="notice">
-            Your place is reserved! Complete your payment and we&apos;ll unlock the course. Questions? WhatsApp us on {site.phone}.
+            Thank you! We received your payment details and are checking them. Your course unlocks as soon as it&apos;s confirmed.
           </p>
         )}
         {params.enrolled && <p className="notice">You&apos;re enrolled. Enjoy your course!</p>}
@@ -67,38 +80,54 @@ export default async function DashboardPage({ searchParams }) {
           </div>
         ) : (
           <div className="course-grid">
-            {enrollments.map(({ status, course, total, done, percent }) => (
-              <article key={course.slug} className={`course-card accent-${course.accent}`}>
-                <div className="course-icon"><Icon name={course.icon} size={26} /></div>
-                {status === "active"
-                  ? <span className="pill pill-success">Active</span>
-                  : <span className="pill pill-pending">Awaiting payment</span>}
-                <h3>{course.title}</h3>
-                <p>{course.summary}</p>
-                {status === "active" ? (
-                  total > 0 ? (
-                    <>
-                      <div className="progress">
-                        <div className="progress-bar"><span style={{ width: `${percent}%` }} /></div>
-                        <small>{percent}% complete · {done}/{total} chapters</small>
-                      </div>
-                      <Link href={`/learn/${course.slug}`} className="btn btn-primary btn-sm">
-                        {done === 0 ? "Start learning" : percent === 100 ? "Review course" : "Continue learning"}
-                      </Link>
-                    </>
+            {enrollments.map(({ status, course, payment, total, done, percent }) => {
+              const state = paymentState(status, payment);
+              return (
+                <article key={course.slug} className={`course-card accent-${course.accent}${course.cover_url ? " has-thumb" : ""}`}>
+                  {course.cover_url ? (
+                    <div className="course-thumb"><img src={course.cover_url} alt="" /></div>
                   ) : (
-                    <span className="course-link muted-link">Chapters coming soon</span>
-                  )
-                ) : (
-                  <div className="card-actions">
-                    <Link href={`/checkout/${course.slug}`} className="btn btn-primary btn-sm">Complete payment</Link>
-                    <a href={site.whatsappHref} target="_blank" rel="noopener" className="btn btn-ghost btn-sm">
-                      <WhatsAppIcon size={16} /> Help
-                    </a>
-                  </div>
-                )}
-              </article>
-            ))}
+                    <div className="course-icon"><Icon name={course.icon} size={26} /></div>
+                  )}
+                  <span className={`pill ${state.pill}`}>{state.label}</span>
+                  <h3>{course.title}</h3>
+
+                  {status === "active" ? (
+                    total > 0 ? (
+                      <>
+                        <div className="progress">
+                          <div className="progress-bar"><span style={{ width: `${percent}%` }} /></div>
+                          <small>{percent}% complete · {done}/{total} chapters</small>
+                        </div>
+                        <Link href={`/learn/${course.slug}`} className="btn btn-primary btn-sm">
+                          {done === 0 ? "Start learning" : percent === 100 ? "Review course" : "Continue learning"}
+                        </Link>
+                      </>
+                    ) : (
+                      <span className="course-link muted-link">Chapters coming soon</span>
+                    )
+                  ) : payment?.status === "submitted" ? (
+                    <p className="small muted">
+                      We&apos;re checking transaction <strong>{payment.transaction_id}</strong>. Your course unlocks as soon as it&apos;s confirmed.
+                    </p>
+                  ) : (
+                    <>
+                      {payment?.status === "rejected" && (
+                        <p className="small reject-note"><strong>Reason:</strong> {payment.admin_note}</p>
+                      )}
+                      <div className="card-actions">
+                        <Link href={`/checkout/${course.slug}`} className="btn btn-primary btn-sm">
+                          {payment?.status === "rejected" ? "Try again" : "Pay now"}
+                        </Link>
+                        <a href={site.whatsappHref} target="_blank" rel="noopener" className="btn btn-ghost btn-sm">
+                          <WhatsAppIcon size={16} /> Help
+                        </a>
+                      </div>
+                    </>
+                  )}
+                </article>
+              );
+            })}
           </div>
         )}
       </div>

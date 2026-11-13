@@ -1,6 +1,9 @@
 // Success / error banner driven by ?saved= and ?error= after an admin action.
 const messages = {
-  active: "Payment confirmed. The student now has access to the course.",
+  approved: "Payment approved. The course is now unlocked for the student.",
+  rejected: "Payment rejected. The student will see your reason and can send it again.",
+  settings: "Payment settings saved.",
+  active: "Access activated. The student now has access to the course.",
   pending: "Marked as awaiting payment.",
   cancelled: "Enrollment cancelled.",
   created: "Course created! Now add Chapter 1 below.",

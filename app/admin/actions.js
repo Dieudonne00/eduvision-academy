@@ -46,7 +46,7 @@ function refresh() {
 
 export async function setEnrollmentStatus(formData) {
   const status = text(formData, "status");
-  const returnTo = text(formData, "return_to") || "/admin/enrollments";
+  const returnTo = text(formData, "return_to") || "/admin/payments?tab=waiting";
   if (!["active", "pending", "cancelled"].includes(status)) back(returnTo, { error: "Unknown status" });
 
   const supabase = await adminClient();
@@ -58,6 +58,43 @@ export async function setEnrollmentStatus(formData) {
 
   refresh();
   back(returnTo, error ? { error: error.message } : { saved: status });
+}
+
+// Approve (unlocks the course) or reject (student sees the reason) a MoMo payment
+export async function reviewPayment(formData) {
+  const approve = text(formData, "decision") === "approve";
+  const returnTo = text(formData, "return_to") || "/admin/payments";
+
+  const supabase = await adminClient();
+  const { error } = await supabase.rpc("review_payment", {
+    p_payment_id: text(formData, "payment_id"),
+    p_approve: approve,
+    p_note: text(formData, "note"),
+  });
+
+  refresh();
+  back(returnTo, error ? { error: error.message } : { saved: approve ? "approved" : "rejected" });
+}
+
+// ── Settings ────────────────────────────────────────────────
+
+export async function saveSettings(formData) {
+  const code = text(formData, "momo_pay_code").replace(/\s/g, "");
+  if (code && !/^\d{4,10}$/.test(code)) back("/admin/settings", { error: "The MoMo Pay code should be numbers only, e.g. 123456." });
+
+  const supabase = await adminClient();
+  const { error } = await supabase
+    .from("settings")
+    .update({
+      momo_pay_code: code,
+      momo_account_name: text(formData, "momo_account_name") || "EduVision Academy",
+      payment_note: text(formData, "payment_note"),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", 1);
+
+  refresh();
+  back("/admin/settings", error ? { error: error.message } : { saved: "settings" });
 }
 
 // ── Course ──────────────────────────────────────────────────

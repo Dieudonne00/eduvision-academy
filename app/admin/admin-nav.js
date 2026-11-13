@@ -6,12 +6,13 @@ import Icon from "@/app/_components/icon";
 
 const items = [
   { href: "/admin", label: "Overview", icon: "book", exact: true },
-  { href: "/admin/enrollments", label: "Payments", icon: "wallet" },
-  { href: "/admin/courses", label: "Courses & lessons", icon: "play" },
+  { href: "/admin/payments", label: "Payments", icon: "wallet", badge: "review" },
+  { href: "/admin/courses", label: "Courses", icon: "play" },
   { href: "/admin/students", label: "Students", icon: "users" },
+  { href: "/admin/settings", label: "Settings", icon: "shield" },
 ];
 
-export default function AdminNav() {
+export default function AdminNav({ toReview = 0 }) {
   const pathname = usePathname();
 
   return (
@@ -21,6 +22,7 @@ export default function AdminNav() {
         return (
           <Link key={item.href} href={item.href} className={active ? "active" : undefined}>
             <Icon name={item.icon} size={18} /> {item.label}
+            {item.badge === "review" && toReview > 0 && <span className="tab-count">{toReview}</span>}
           </Link>
         );
       })}
