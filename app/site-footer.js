@@ -16,13 +16,13 @@ export default async function SiteFooter() {
             <Image src={logo} alt="EduVision Academy" width={180} />
           </div>
           <p>
-            Audio and video lessons, practice quizzes and exams for languages and practical skills,
+            School of English and Communication: certification, fluency and public speaking,
             from our classrooms in Kigali to your phone.
           </p>
         </div>
 
         <div>
-          <h3>Courses</h3>
+          <h3>Programmes</h3>
           <ul>
             {courses.map((c) => (
               <li key={c.slug}><Link href={`/courses/${c.slug}`}>{c.title}</Link></li>

@@ -9,15 +9,15 @@ const serif = Lora({ subsets: ["latin"], style: ["italic"], variable: "--font-se
 export const metadata = {
   metadataBase: new URL("https://eduvisionacademy.com"),
   title: {
-    default: "EduVision Academy · Learn languages & skills online",
+    default: "EduVision Academy · School of English and Communication",
     template: "%s · EduVision Academy",
   },
   description:
-    "Learn English, French, Swahili, Chinese, photography and traffic rules through audio and video lessons, quizzes marked instantly and exams. Kigali, Rwanda.",
+    "School of English and Communication in Kigali: English certification (IELTS, TOEFL, Duolingo), fluency, and public speaking, with audio and video lessons, quizzes marked instantly and exams.",
   openGraph: {
     title: "EduVision Academy",
     description: "Come to learn, Go to serve. Audio & video lessons, quizzes and exams.",
-    images: ["/images/class-photography.webp"],
+    images: ["/images/exam-room.webp"],
   },
 };
 

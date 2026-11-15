@@ -6,7 +6,7 @@ import MobileNav from "./mobile-nav";
 import logoMark from "@/public/images/logo-mark.png";
 
 const links = [
-  { href: "/courses", label: "Courses" },
+  { href: "/courses", label: "Programmes" },
   { href: "/#how-it-works", label: "How it works" },
   { href: "/#why-us", label: "Why us" },
   { href: "/contact", label: "Contact" },

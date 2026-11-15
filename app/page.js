@@ -5,14 +5,14 @@ import CourseCard from "./_components/course-card";
 import { site } from "@/lib/site";
 import { getPublishedCourses } from "@/lib/courses";
 
-import heroPhoto from "@/public/images/class-photography.webp";
+import heroPhoto from "@/public/images/exam-room.webp";
 import instructorPhoto from "@/public/images/instructor-studio.webp";
 import lessonPhoto from "@/public/images/lesson-shot-types.webp";
-import examPhoto from "@/public/images/exam-room.webp";
+import quizPhoto from "@/public/images/front-desk.webp";
 import storefrontPhoto from "@/public/images/storefront.webp";
 
 const steps = [
-  { icon: "book", title: "Choose your course", text: "Pick a language or skill and enroll in a few clicks." },
+  { icon: "book", title: "Choose your programme", text: "Pick certification, fluency or public speaking and enroll in minutes." },
   { icon: "play", title: "Watch & listen", text: "Learn from short video and audio lessons, on any device." },
   { icon: "checkCircle", title: "Practise with quizzes", text: "Test yourself after each unit. Results appear instantly." },
   { icon: "award", title: "Pass & get certified", text: "Take the final exam and earn your EduVision certificate." },
@@ -21,13 +21,12 @@ const steps = [
 const reasons = [
   { icon: "users", title: "Skilled trainers", text: "Learn from experienced teachers who know how to make lessons stick." },
   { icon: "clock", title: "Flexible schedule", text: "Study online any time, or join our classes in Kigali." },
-  { icon: "hands", title: "Practical, hands-on", text: "Real conversations, real cameras, real road signs. Not just theory." },
+  { icon: "hands", title: "Practical, hands-on", text: "Real conversations, real presentations, real feedback. Not just grammar rules." },
   { icon: "wallet", title: "Affordable fees", text: "Quality education priced for students and working people." },
 ];
 
 export default async function Home() {
   const courses = await getPublishedCourses();
-  const languages = courses.filter((c) => c.category === "Languages").length;
 
   return (
     <main>
@@ -36,18 +35,18 @@ export default async function Home() {
         <div className="hero-bg" aria-hidden="true" />
         <div className="container hero-grid">
           <div className="hero-copy">
-            <span className="eyebrow"><span className="dot" /> Now enrolling · Online &amp; in Kigali</span>
+            <span className="eyebrow"><span className="dot" /> School of English and Communication</span>
             <h1>
-              Unlock your skills.<br />
+              Speak English with confidence.<br />
               <span className="underline">Shape your future.</span>
             </h1>
             <p className="lead">
-              Learn English, French, Swahili, Chinese, photography and traffic rules through
-              video and audio lessons, quizzes that mark themselves, and exams that prove your progress.
+              Get certified, become fluent and speak in public like a professional, through video and
+              audio lessons, quizzes that mark themselves, and exams that prove your progress.
             </p>
             <div className="hero-actions">
               <Link href="/courses" className="btn btn-primary btn-lg">
-                Browse courses <Icon name="arrowRight" size={18} />
+                See our programmes <Icon name="arrowRight" size={18} />
               </Link>
               <Link href="/#how-it-works" className="btn btn-ghost btn-lg">
                 <span className="play-dot"><Icon name="play" size={12} /></span> How it works
@@ -64,7 +63,7 @@ export default async function Home() {
             <div className="hero-photo">
               <Image
                 src={heroPhoto}
-                alt="An EduVision instructor teaching a photography class"
+                alt="Students sitting an English exam at EduVision Academy"
                 priority
                 placeholder="blur"
                 sizes="(max-width: 900px) 100vw, 560px"
@@ -89,8 +88,8 @@ export default async function Home() {
       {/* ── Highlights strip ─────────────────────────────── */}
       <section className="strip">
         <div className="container strip-grid">
-          <div><strong>{courses.length}</strong><span>courses to choose from</span></div>
-          <div><strong>{languages}</strong><span>languages taught</span></div>
+          <div><strong>{courses.length}</strong><span>flagship programmes</span></div>
+          <div><strong>IELTS</strong><span>TOEFL &amp; Duolingo preparation</span></div>
           <div><strong>24/7</strong><span>online access</span></div>
           <div><strong>100%</strong><span>automatic quiz marking</span></div>
         </div>
@@ -100,9 +99,9 @@ export default async function Home() {
       <section className="section" id="courses">
         <div className="container">
           <div className="section-head">
-            <span className="kicker">Our courses</span>
-            <h2>Professional short courses for real life</h2>
-            <p>Every course combines lessons you can watch or listen to, practice quizzes and a final exam.</p>
+            <span className="kicker">Our flagship programmes</span>
+            <h2>English that opens doors</h2>
+            <p>Every programme combines chapters you can watch or listen to, practice quizzes and a final exam.</p>
           </div>
           <div className="course-grid">
             {courses.map((c) => <CourseCard key={c.slug} course={c} />)}
@@ -139,7 +138,7 @@ export default async function Home() {
                 sizes="(max-width: 900px) 80vw, 380px" />
             </div>
             <div className="media-overlap">
-              <Image src={lessonPhoto} alt="A visual lesson slide explaining camera shot types" placeholder="blur"
+              <Image src={lessonPhoto} alt="An EduVision English grammar class" placeholder="blur"
                 sizes="(max-width: 900px) 70vw, 340px" />
             </div>
             <div className="badge-card">
@@ -182,12 +181,12 @@ export default async function Home() {
           </div>
           <div className="split-media result-wrap">
             <div className="photo-frame">
-              <Image src={examPhoto} alt="Students sitting an exam at EduVision Academy" placeholder="blur"
+              <Image src={quizPhoto} alt="A student taking an online quiz" placeholder="blur"
                 sizes="(max-width: 900px) 100vw, 520px" />
             </div>
             <div className="result-card" aria-label="Example of a quiz result">
               <div className="result-top">
-                <span className="result-label">Unit 3 quiz · French</span>
+                <span className="result-label">Chapter 3 quiz · English Fluency</span>
                 <span className="pill pill-success">Passed</span>
               </div>
               <div className="result-score">
@@ -198,8 +197,8 @@ export default async function Home() {
                 </div>
               </div>
               <ul className="result-lines">
-                <li className="ok"><Icon name="check" size={14} /> &laquo; Bonjour &raquo; → Hello</li>
-                <li className="bad"><Icon name="close" size={14} /> &laquo; Bonsoir &raquo; → Good evening</li>
+                <li className="ok"><Icon name="check" size={14} /> &ldquo;I have lived here for 3 years&rdquo;</li>
+                <li className="bad"><Icon name="close" size={14} /> &ldquo;less people&rdquo; → fewer people</li>
               </ul>
             </div>
           </div>
@@ -213,7 +212,7 @@ export default async function Home() {
           <div className="section-head light">
             <span className="kicker">Why choose us</span>
             <h2>Come to learn, <em>go to serve</em></h2>
-            <p>We train people with skills they can use the very next day: at work, on the road and around the world.</p>
+            <p>We train people to communicate with confidence: in interviews, at work, on stage and around the world.</p>
           </div>
           <div className="why-grid">
             {reasons.map((r) => (
@@ -283,7 +282,7 @@ export default async function Home() {
           </div>
           <div className="cta-actions">
             <Link href="/signup" className="btn btn-light btn-lg">Create free account</Link>
-            <Link href="/courses" className="btn btn-outline-light btn-lg">See all courses</Link>
+            <Link href="/courses" className="btn btn-outline-light btn-lg">See our programmes</Link>
           </div>
         </div>
       </section>
