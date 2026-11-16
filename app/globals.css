@@ -435,6 +435,7 @@ em { font-family: var(--font-serif); font-style: italic; font-weight: 500; }
 }
 .page-hero h1 { font-size: clamp(2rem, 4.4vw, 3.2rem); max-width: 760px; margin: 0 auto .8rem; }
 .page-hero p { max-width: 620px; margin: 0 auto; font-size: 1.08rem; }
+.course-group + .course-group { margin-top: 48px; }
 .group-title { font-size: 1.4rem; margin-bottom: 1.4rem; display: flex; align-items: center; gap: .7rem; }
 .group-title::before { content: ""; width: 28px; height: 4px; border-radius: 4px; background: var(--orange); }
 .help-box {
@@ -910,6 +911,12 @@ select { appearance: auto; }
 .momo-ussd code { padding: .15rem .4rem; border-radius: 6px; background: #fff; font-weight: 700; color: #1d1a00; }
 .copy-btn { color: #7a6510; text-decoration: underline; }
 .pay-form { display: grid; gap: 14px; margin-top: 12px; }
+.momo-breakdown { margin: -6px 0 14px; font-size: .88rem; color: #4a3f00; }
+.summary-line { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; font-size: .95rem; }
+.summary-line small { color: var(--muted); }
+.summary-line.total { border-top: 1px solid var(--line); margin-top: 6px; padding-top: 12px; }
+.summary-line.total strong { font-size: 1.3rem; color: var(--ink); }
+.block { display: block; }
 .help-line { margin-top: 1.4rem; }
 .status-box.rejected { background: var(--error-50); color: var(--error); align-items: flex-start; }
 .status-box.rejected p { color: #7f1d1d; margin-top: .3rem; }

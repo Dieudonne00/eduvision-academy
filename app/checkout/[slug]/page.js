@@ -5,7 +5,7 @@ import Icon, { WhatsAppIcon } from "@/app/_components/icon";
 import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { withDisplay, formatPrice } from "@/lib/courses";
-import { getPaymentSettings, latestPayments, momoUssd, momoDialHref } from "@/lib/payments";
+import { getPaymentSettings, latestPayments, registrationFeeDue, momoUssd, momoDialHref } from "@/lib/payments";
 import { site } from "@/lib/site";
 import { reserveCourse } from "../actions";
 import PaymentForm from "../payment-form";
@@ -27,16 +27,19 @@ export default async function CheckoutPage({ params, searchParams }) {
   if (!row) notFound();
   const course = withDisplay(row);
 
-  const [{ data: enrollment }, settings, payments] = await Promise.all([
+  const [{ data: enrollment }, settings, payments, feeDue] = await Promise.all([
     supabase.from("enrollments").select("status").eq("course_id", course.id).eq("user_id", user.id).maybeSingle(),
     getPaymentSettings(),
     latestPayments(supabase, user.id, [course.id]),
+    registrationFeeDue(supabase),
   ]);
   const payment = payments[course.id];
   const price = formatPrice(course.price, course.currency);
   const isPaid = course.price !== null && Number(course.price) > 0;
+  const regFee = isPaid ? feeDue : 0;
+  const total = isPaid ? Number(course.price) + regFee : 0;
   const code = settings.momo_pay_code;
-  const ussd = isPaid && code ? momoUssd(code, course.price) : null;
+  const ussd = isPaid && code ? momoUssd(code, total) : null;
 
   const whatsappText = encodeURIComponent(
     `Hello EduVision Academy, I'd like to pay for the ${course.title} course. My name is ${profile?.full_name || ""}.`
@@ -112,9 +115,14 @@ export default async function CheckoutPage({ params, searchParams }) {
           <div className="momo-rows">
             <div><small>MoMo Pay code</small><strong className="momo-code">{code}</strong></div>
             <div><small>Merchant</small><strong>{settings.momo_account_name}</strong></div>
-            <div><small>Amount</small><strong>{price}</strong></div>
+            <div><small>Amount to pay</small><strong>{formatPrice(total, course.currency)}</strong></div>
           </div>
-          <a href={momoDialHref(code, course.price)} className="btn btn-momo btn-lg btn-block">📱 Dial to pay now</a>
+          {regFee > 0 && (
+            <p className="momo-breakdown">
+              Course fee {price} + one-time registration fee {formatPrice(regFee, course.currency)}
+            </p>
+          )}
+          <a href={momoDialHref(code, total)} className="btn btn-momo btn-lg btn-block">📱 Dial to pay now</a>
           <p className="momo-ussd">
             Or dial <code>{ussd}</code> <CopyButton text={ussd} />, then enter your MoMo PIN.
           </p>
@@ -156,6 +164,18 @@ export default async function CheckoutPage({ params, searchParams }) {
             <span>Course fee</span>
             <strong>{price || "Price on request"}</strong>
           </div>
+          {regFee > 0 && (
+            <>
+              <div className="summary-line">
+                <span>Registration fee <small>(one time)</small></span>
+                <span>{formatPrice(regFee, course.currency)}</span>
+              </div>
+              <div className="summary-line total">
+                <span>Total</span>
+                <strong>{formatPrice(total, course.currency)}</strong>
+              </div>
+            </>
+          )}
         </aside>
       </div>
     </main>

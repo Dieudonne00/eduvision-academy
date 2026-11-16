@@ -81,6 +81,8 @@ export async function reviewPayment(formData) {
 export async function saveSettings(formData) {
   const code = text(formData, "momo_pay_code").replace(/\s/g, "");
   if (code && !/^\d{4,10}$/.test(code)) back("/admin/settings", { error: "The MoMo Pay code should be numbers only, e.g. 123456." });
+  const fee = Number(text(formData, "registration_fee").replace(/[\s,]/g, "") || 0);
+  if (!Number.isFinite(fee) || fee < 0) back("/admin/settings", { error: "The registration fee must be a number, e.g. 10000 (or 0 for none)." });
 
   const supabase = await adminClient();
   const { error } = await supabase
@@ -89,6 +91,7 @@ export async function saveSettings(formData) {
       momo_pay_code: code,
       momo_account_name: text(formData, "momo_account_name") || "EduVision Academy",
       payment_note: text(formData, "payment_note"),
+      registration_fee: fee,
       updated_at: new Date().toISOString(),
     })
     .eq("id", 1);

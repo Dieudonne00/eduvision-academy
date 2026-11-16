@@ -29,6 +29,11 @@ export default async function SettingsPage({ searchParams }) {
             <small className="hint">The name students see on their phone when paying, so they know it&apos;s you.</small>
           </label>
           <label>
+            Registration fee (RWF)
+            <input name="registration_fee" inputMode="numeric" defaultValue={Number(settings.registration_fee || 0)} placeholder="10000" />
+            <small className="hint">Paid once, added to a student&apos;s first course payment. Use 0 for none.</small>
+          </label>
+          <label>
             Extra note on the payment page <span className="hint">(optional)</span>
             <textarea name="payment_note" rows={2} defaultValue={settings.payment_note}
               placeholder="e.g. Payments are confirmed within 2 hours, Monday to Saturday." />

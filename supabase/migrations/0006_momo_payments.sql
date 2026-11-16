@@ -12,8 +12,10 @@ create table if not exists public.settings (
   momo_pay_code      text not null default '',
   momo_account_name  text not null default 'EduVision Academy',
   payment_note       text not null default '',
+  registration_fee   numeric(12, 2) not null default 0 check (registration_fee >= 0),
   updated_at         timestamptz not null default now()
 );
+alter table public.settings add column if not exists registration_fee numeric(12, 2) not null default 0;
 insert into public.settings (id) values (1) on conflict (id) do nothing;
 
 alter table public.settings enable row level security;
@@ -30,7 +32,8 @@ create table if not exists public.payments (
   user_id         uuid not null references public.profiles(id) on delete cascade,
   course_id       uuid not null references public.courses(id) on delete cascade,
   method          text not null default 'momo' check (method in ('momo', 'manual')),
-  amount          numeric(12, 2),
+  amount          numeric(12, 2),            -- total paid = course fee + registration_fee
+  registration_fee numeric(12, 2) not null default 0,
   currency        text not null default 'RWF',
   payer_phone     text not null default '',
   payer_name      text not null default '',
@@ -41,6 +44,7 @@ create table if not exists public.payments (
   reviewed_at     timestamptz,
   reviewed_by     uuid references public.profiles(id) on delete set null
 );
+alter table public.payments add column if not exists registration_fee numeric(12, 2) not null default 0;
 create index if not exists payments_status_idx on public.payments (status, created_at desc);
 create index if not exists payments_user_course_idx on public.payments (user_id, course_id, created_at desc);
 -- A MoMo transaction can only pay for one enrollment (rejected ones can be reused)
@@ -53,6 +57,21 @@ create policy "read own payments or admin" on public.payments
   for select using (user_id = auth.uid() or is_admin());
 -- No insert/update policies: payments change only through the functions below.
 
+-- One-time registration fee: charged on a student's first payment only
+-- (for the signed-in student; free courses don't count as "already registered")
+create or replace function public.registration_fee_due()
+returns numeric language sql stable security definer set search_path = public as $$
+  select case
+    when auth.uid() is null then null
+    when exists (select 1 from payments where user_id = auth.uid() and status = 'approved') then 0
+    when exists (select 1 from enrollments e join courses c on c.id = e.course_id
+                 where e.user_id = auth.uid() and e.status = 'active' and coalesce(c.price, 0) > 0) then 0
+    else (select registration_fee from settings where id = 1)
+  end;
+$$;
+revoke all on function public.registration_fee_due() from public, anon;
+grant execute on function public.registration_fee_due() to authenticated;
+
 -- Student: "I paid, here is my transaction ID"
 create or replace function public.submit_payment(
   p_course_id uuid, p_transaction_id text, p_payer_phone text, p_payer_name text default ''
@@ -60,6 +79,7 @@ create or replace function public.submit_payment(
 declare
   v_course  courses;
   v_txid    text := upper(regexp_replace(coalesce(p_transaction_id, ''), '\s', '', 'g'));
+  v_fee     numeric;
   v_row     payments;
 begin
   if auth.uid() is null then raise exception 'Please log in first.'; end if;
@@ -85,9 +105,11 @@ begin
   on conflict (user_id, course_id) do update
     set status = case when enrollments.status = 'cancelled' then 'pending' else enrollments.status end;
 
+  v_fee := coalesce(registration_fee_due(), 0);
+
   begin
-    insert into payments (user_id, course_id, method, amount, currency, payer_phone, payer_name, transaction_id)
-    values (auth.uid(), p_course_id, 'momo', v_course.price, v_course.currency,
+    insert into payments (user_id, course_id, method, amount, registration_fee, currency, payer_phone, payer_name, transaction_id)
+    values (auth.uid(), p_course_id, 'momo', v_course.price + v_fee, v_fee, v_course.currency,
             btrim(p_payer_phone), btrim(coalesce(p_payer_name, '')), v_txid)
     returning * into v_row;
   exception when unique_violation then

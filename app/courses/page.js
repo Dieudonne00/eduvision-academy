@@ -1,12 +1,12 @@
 import Link from "next/link";
-import CourseCard from "../_components/course-card";
+import CourseGroups from "../_components/course-groups";
 import Icon from "../_components/icon";
 import { getPublishedCourses } from "@/lib/courses";
 
 export const metadata = {
   title: "Programmes",
   description:
-    "English Language Certification, English Fluency and Communication, and Public Speaking and Professional Communication, with video and audio lessons.",
+    "English certification, fluency and public speaking, plus English, French, Chinese, Swahili and German courses, photography and traffic rules.",
 };
 
 export default async function CoursesPage() {
@@ -17,16 +17,14 @@ export default async function CoursesPage() {
       <section className="page-hero">
         <div className="container">
           <span className="kicker">School of English and Communication</span>
-          <h1>Our flagship programmes</h1>
-          <p>Each programme is a series of video and audio chapters you can follow on your phone, with quizzes and a final exam.</p>
+          <h1>Programmes &amp; courses</h1>
+          <p>Our flagship English programmes, plus languages and practical skills. Every course is a series of video and audio chapters you can follow on your phone.</p>
         </div>
       </section>
 
       <section className="section section-compact">
         <div className="container">
-          <div className="course-grid">
-            {courses.map((c) => <CourseCard key={c.slug} course={c} />)}
-          </div>
+          <CourseGroups courses={courses} />
         </div>
       </section>
 

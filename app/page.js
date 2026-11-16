@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import Icon, { WhatsAppIcon } from "./_components/icon";
-import CourseCard from "./_components/course-card";
+import CourseGroups from "./_components/course-groups";
 import { site } from "@/lib/site";
 import { getPublishedCourses } from "@/lib/courses";
 
@@ -27,6 +27,7 @@ const reasons = [
 
 export default async function Home() {
   const courses = await getPublishedCourses();
+  const languages = courses.filter((c) => c.category === "Languages").length;
 
   return (
     <main>
@@ -41,8 +42,8 @@ export default async function Home() {
               <span className="underline">Shape your future.</span>
             </h1>
             <p className="lead">
-              Get certified, become fluent and speak in public like a professional, through video and
-              audio lessons, quizzes that mark themselves, and exams that prove your progress.
+              Get certified, become fluent and speak in public like a professional. Learn French, Chinese,
+              Swahili and German too, with video and audio lessons you can follow from your phone.
             </p>
             <div className="hero-actions">
               <Link href="/courses" className="btn btn-primary btn-lg">
@@ -88,10 +89,10 @@ export default async function Home() {
       {/* ── Highlights strip ─────────────────────────────── */}
       <section className="strip">
         <div className="container strip-grid">
-          <div><strong>{courses.length}</strong><span>flagship programmes</span></div>
-          <div><strong>IELTS</strong><span>TOEFL &amp; Duolingo preparation</span></div>
+          <div><strong>{courses.length}</strong><span>programmes &amp; courses</span></div>
+          <div><strong>{languages || 5}</strong><span>languages taught</span></div>
+          <div><strong>IELTS</strong><span>TOEFL, Duolingo, DEF &amp; TEF prep</span></div>
           <div><strong>24/7</strong><span>online access</span></div>
-          <div><strong>100%</strong><span>automatic quiz marking</span></div>
         </div>
       </section>
 
@@ -99,13 +100,11 @@ export default async function Home() {
       <section className="section" id="courses">
         <div className="container">
           <div className="section-head">
-            <span className="kicker">Our flagship programmes</span>
-            <h2>English that opens doors</h2>
-            <p>Every programme combines chapters you can watch or listen to, practice quizzes and a final exam.</p>
+            <span className="kicker">Programmes &amp; courses</span>
+            <h2>Skills that open doors</h2>
+            <p>Our flagship English programmes, plus languages and practical skills, all with chapters you can watch or listen to.</p>
           </div>
-          <div className="course-grid">
-            {courses.map((c) => <CourseCard key={c.slug} course={c} />)}
-          </div>
+          <CourseGroups courses={courses} />
         </div>
       </section>
 
@@ -232,12 +231,14 @@ export default async function Home() {
           <div>
             <span className="kicker">Going abroad?</span>
             <h2>We help you prepare for international certificates</h2>
-            <p>Targeted English practice and mock tests for the exams universities and employers ask for.</p>
+            <p>Targeted English and French practice and mock tests for the exams universities, embassies and employers ask for.</p>
           </div>
           <div className="cert-badges">
             <span>IELTS</span>
             <span>TOEFL</span>
             <span>Duolingo</span>
+            <span>DEF</span>
+            <span>TEF</span>
           </div>
         </div>
       </section>

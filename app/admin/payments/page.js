@@ -45,7 +45,7 @@ export default async function PaymentsPage({ searchParams }) {
   } else {
     const { data: payments } = await supabase
       .from("payments")
-      .select("id, amount, currency, payer_phone, payer_name, transaction_id, status, admin_note, created_at, reviewed_at, profiles!payments_user_id_fkey (full_name, email, phone), courses (title, price, currency)")
+      .select("id, amount, registration_fee, currency, payer_phone, payer_name, transaction_id, status, admin_note, created_at, reviewed_at, profiles!payments_user_id_fkey (full_name, email, phone), courses (title, price, currency)")
       .eq("status", tab)
       .order("created_at", { ascending: tab === "submitted" });
 
@@ -53,13 +53,15 @@ export default async function PaymentsPage({ searchParams }) {
       <div className="pay-cards">
         {payments.map((p) => {
           const student = p.profiles || {};
-          const mismatch = p.courses?.price != null && Number(p.amount) !== Number(p.courses.price);
+          const regFee = Number(p.registration_fee || 0);
+          const mismatch = p.courses?.price != null && Number(p.amount) !== Number(p.courses.price) + regFee;
           return (
             <article key={p.id} className={`pay-card ${p.status}`}>
               <div className="pay-card-top">
                 <div>
                   <strong className="pay-amount">{formatPrice(p.amount, p.currency)}</strong>
                   <span className="muted small"> · {p.courses?.title}</span>
+                  {regFee > 0 && <small className="muted block">includes {formatPrice(regFee, p.currency)} registration fee</small>}
                 </div>
                 <small className="muted">{when(p.created_at)}</small>
               </div>
