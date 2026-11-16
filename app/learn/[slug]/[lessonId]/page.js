@@ -3,9 +3,11 @@ import { notFound } from "next/navigation";
 import Icon from "@/app/_components/icon";
 import { requireUser } from "@/lib/auth";
 import { getCourseOutline } from "@/lib/courses";
+import { getClassroom, nextItem } from "@/lib/learn";
 import { audioUrl } from "@/lib/media";
 import { createClient } from "@/lib/supabase/server";
 import VideoPlayer from "../../video-player";
+import ClassSidebar from "../../class-sidebar";
 import { setLessonComplete } from "../../actions";
 
 export async function generateMetadata({ params }) {
@@ -16,6 +18,7 @@ export async function generateMetadata({ params }) {
 export default async function ChapterPage({ params }) {
   const { slug, lessonId } = await params;
   const { user, profile } = await requireUser(`/learn/${slug}/${lessonId}`);
+  const isAdmin = profile?.role === "admin";
 
   const course = await getCourseOutline(slug);
   if (!course) notFound();
@@ -23,59 +26,29 @@ export default async function ChapterPage({ params }) {
   const index = chapters.findIndex((l) => l.id === lessonId);
   if (index === -1) notFound();
   const chapter = chapters[index];
-  const prev = chapters[index - 1];
-  const next = chapters[index + 1];
 
   const supabase = await createClient();
-  const [{ data: enrollment }, { data: media }, { data: done }] = await Promise.all([
-    supabase.from("enrollments").select("status").eq("course_id", course.id).eq("user_id", user.id).maybeSingle(),
+  const [classroom, { data: media }] = await Promise.all([
+    getClassroom(supabase, course, user.id, isAdmin),
     // Database rules only return media to enrolled students, free previews and admins
     supabase.from("lesson_media").select("youtube_id, audio_path").eq("lesson_id", lessonId).maybeSingle(),
-    supabase.from("lesson_progress").select("lesson_id").eq("user_id", user.id).in("lesson_id", chapters.map((l) => l.id)),
   ]);
+  const { enrolled, finished } = classroom;
+  const { data: enrollment } = enrolled ? { data: { status: "active" } }
+    : await supabase.from("enrollments").select("status").eq("course_id", course.id).eq("user_id", user.id).maybeSingle();
 
-  const isAdmin = profile?.role === "admin";
-  const enrolled = enrollment?.status === "active";
   const canWatch = Boolean(media) && (enrolled || isAdmin || chapter.is_preview);
   const audio = canWatch && chapter.kind === "audio" ? await audioUrl(supabase, media.audio_path) : null;
-  const finished = new Set((done || []).map((d) => d.lesson_id));
   const isDone = finished.has(lessonId);
-  const percent = chapters.length ? Math.round((finished.size / chapters.length) * 100) : 0;
+  const next = nextItem(classroom.items, lessonId);
+  const prev = chapters[index - 1];
   const watermark = `${profile?.full_name || ""} · ${user.email}`;
+  const previews = Object.fromEntries(chapters.filter((c) => c.is_preview).map((c) => [c.id, true]));
+  const nextLabel = !next ? null : next.type === "chapter" ? `Chapter ${next.number}` : next.title;
 
   return (
     <main className="classroom">
-      <aside className="class-side">
-        <div className="class-course">
-          <Link href={`/courses/${course.slug}`} className="small">← Course page</Link>
-          <h2>{course.title}</h2>
-          {enrolled && (
-            <div className="progress">
-              <div className="progress-bar"><span style={{ width: `${percent}%` }} /></div>
-              <small>{percent}% complete · {finished.size}/{chapters.length} chapters</small>
-            </div>
-          )}
-        </div>
-        <nav className="class-chapters" aria-label="Chapters">
-          <ol>
-            {chapters.map((l, i) => {
-              const locked = !enrolled && !isAdmin && !l.is_preview;
-              return (
-                <li key={l.id}>
-                  <Link href={`/learn/${course.slug}/${l.id}`}
-                    className={`${l.id === lessonId ? "current" : ""} ${finished.has(l.id) ? "done" : ""}`}>
-                    <span className="state">
-                      {finished.has(l.id) ? <Icon name="check" size={13} strokeWidth={3} /> : locked ? "🔒" : i + 1}
-                    </span>
-                    <span className="grow">{l.title}</span>
-                    <Icon name={l.kind === "video" ? "play" : "headphones"} size={13} />
-                  </Link>
-                </li>
-              );
-            })}
-          </ol>
-        </nav>
-      </aside>
+      <ClassSidebar course={course} classroom={classroom} currentId={lessonId} isAdmin={isAdmin} chapterPreviews={previews} />
 
       <section className="class-main">
         {canWatch && chapter.kind === "video" && media.youtube_id ? (
@@ -117,9 +90,9 @@ export default async function ChapterPage({ params }) {
               <input type="hidden" name="lesson_id" value={lessonId} />
               <input type="hidden" name="slug" value={course.slug} />
               <input type="hidden" name="complete" value={isDone ? "0" : "1"} />
-              {next && <input type="hidden" name="next_id" value={next.id} />}
+              {next && <input type="hidden" name="next_url" value={next.href} />}
               <button type="submit" className={`btn ${isDone ? "btn-ghost" : "btn-primary"}`}>
-                {isDone ? <><Icon name="check" size={16} /> Completed</> : next ? "Complete & next chapter →" : "Mark complete"}
+                {isDone ? <><Icon name="check" size={16} /> Completed</> : next ? `Complete & continue to ${nextLabel} →` : "Mark complete"}
               </button>
             </form>
           )}
@@ -127,7 +100,7 @@ export default async function ChapterPage({ params }) {
 
         <div className="lesson-nav">
           {prev ? <Link href={`/learn/${course.slug}/${prev.id}`} className="btn btn-ghost">← Chapter {index}</Link> : <span />}
-          {next ? <Link href={`/learn/${course.slug}/${next.id}`} className="btn btn-ghost">Chapter {index + 2} →</Link> : <span />}
+          {next ? <Link href={next.href} className="btn btn-ghost">{nextLabel} →</Link> : <span />}
         </div>
       </section>
     </main>

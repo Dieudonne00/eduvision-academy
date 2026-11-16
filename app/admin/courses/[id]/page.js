@@ -7,6 +7,7 @@ import Flash from "../../flash";
 import DeleteButton from "../../delete-button";
 import CourseForm from "../../course-form";
 import ChapterForm from "../../chapter-form";
+import { createQuiz } from "../../quiz-actions";
 
 function MoveButtons({ id, courseId, first, last }) {
   return (
@@ -38,6 +39,14 @@ export default async function AdminCoursePage({ params, searchParams }) {
     .eq("id", id)
     .maybeSingle();
   if (!course) notFound();
+
+  const { data: quizRows } = await supabase
+    .from("quizzes")
+    .select("id, title, kind, after_lesson_id, pass_mark, published, position, questions (id)")
+    .eq("course_id", id)
+    .order("position");
+  const quizzes = quizRows || [];
+  const exam = quizzes.find((q) => q.kind === "exam");
 
   const chapters = [...(course.modules || [])]
     .sort((a, b) => a.position - b.position)
@@ -109,6 +118,63 @@ export default async function AdminCoursePage({ params, searchParams }) {
             Course complete? Tick <strong>Published</strong> in step 1 and click <strong>Save course</strong> to show it on the website.
           </p>
         )}
+      </section>
+
+      <section className="admin-card" id="quizzes">
+        <h2><span className="step-badge">3</span> Quizzes &amp; final exam <span className="hint">(optional)</span></h2>
+        <p className="muted small">
+          Add a short quiz after any chapter. The final exam unlocks when a student finishes every chapter;
+          passing it gives them a certificate automatically.
+        </p>
+
+        {quizzes.length > 0 && (
+          <ul className="quiz-rows">
+            {quizzes.map((q) => {
+              const after = chapters.findIndex((c) => c.id === q.after_lesson_id);
+              return (
+                <li key={q.id}>
+                  <span className="quiz-emoji">{q.kind === "exam" ? "🎓" : "📝"}</span>
+                  <div className="lesson-info">
+                    <strong>{q.title}</strong>
+                    <small>
+                      {q.kind === "exam" ? "Final exam" : after >= 0 ? `After chapter ${after + 1}` : "Quiz"} ·{" "}
+                      {q.questions?.length || 0} questions · pass {q.pass_mark}%
+                    </small>
+                  </div>
+                  <span className={`pill ${q.published ? "pill-success" : "pill-muted"}`}>{q.published ? "Published" : "Draft"}</span>
+                  <Link href={`/admin/courses/${course.id}/quizzes/${q.id}`} className="btn btn-sm btn-primary">Edit</Link>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+
+        <div className="quiz-create">
+          <form action={createQuiz} className="form-row">
+            <input type="hidden" name="course_id" value={course.id} />
+            <input type="hidden" name="kind" value="quiz" />
+            <label className="grow">
+              New quiz
+              <input name="title" placeholder="e.g. Chapter 1 quiz" />
+            </label>
+            <label className="grow">
+              Place it after
+              <select name="after_lesson_id" defaultValue={chapters.at(-1)?.id || ""}>
+                {chapters.length === 0 && <option value="">(add chapters first)</option>}
+                {chapters.map((c, i) => <option key={c.id} value={c.id}>Chapter {i + 1}: {c.title}</option>)}
+              </select>
+            </label>
+            <button type="submit" className="btn btn-ghost" disabled={!chapters.length}>+ Add quiz</button>
+          </form>
+          {!exam && (
+            <form action={createQuiz}>
+              <input type="hidden" name="course_id" value={course.id} />
+              <input type="hidden" name="kind" value="exam" />
+              <input type="hidden" name="title" value="Final exam" />
+              <button type="submit" className="btn btn-primary">🎓 Add final exam</button>
+            </form>
+          )}
+        </div>
       </section>
 
       <section className="admin-card danger-zone">

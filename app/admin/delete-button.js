@@ -3,7 +3,7 @@
 import Icon from "@/app/_components/icon";
 
 // Delete button that asks for confirmation before submitting.
-export default function DeleteButton({ action, id, courseId, label, confirmText, wide = false }) {
+export default function DeleteButton({ action, id, courseId, label, confirmText, wide = false, fields = {} }) {
   return (
     <form
       action={action}
@@ -13,6 +13,7 @@ export default function DeleteButton({ action, id, courseId, label, confirmText,
     >
       {id && <input type="hidden" name="id" value={id} />}
       <input type="hidden" name="course_id" value={courseId} />
+      {Object.entries(fields).map(([k, v]) => <input key={k} type="hidden" name={k} value={v} />)}
       {wide ? (
         <button type="submit" className="btn btn-sm btn-danger">{label}</button>
       ) : (

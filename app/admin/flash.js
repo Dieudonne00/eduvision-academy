@@ -10,6 +10,9 @@ const messages = {
   course: "Course saved.",
   chapter: "Chapter added. Add the next one, or tick Published when the course is ready.",
   "chapter-updated": "Chapter saved.",
+  "quiz-created": "Created! Add questions below, then tick Published.",
+  quiz: "Saved.",
+  question: "Question added.",
   deleted: "Deleted.",
 };
 

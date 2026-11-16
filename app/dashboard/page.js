@@ -22,14 +22,16 @@ export default async function DashboardPage({ searchParams }) {
   const firstName = (profile?.full_name || user.email).split(" ")[0];
 
   const supabase = await createClient();
-  const [{ data: rows }, { data: progress }] = await Promise.all([
+  const [{ data: rows }, { data: progress }, { data: certs }] = await Promise.all([
     supabase
       .from("enrollments")
       .select("status, created_at, courses (id, slug, title, description, category, icon, accent, cover_url, modules (lessons (id)))")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false }),
     supabase.from("lesson_progress").select("lesson_id").eq("user_id", user.id),
+    supabase.from("certificates").select("course_id, code").eq("user_id", user.id),
   ]);
+  const certByCourse = Object.fromEntries((certs || []).map((c) => [c.course_id, c.code]));
   const finished = new Set((progress || []).map((p) => p.lesson_id));
   const visible = (rows || []).filter((r) => r.courses && r.status !== "cancelled");
   const payments = await latestPayments(supabase, user.id, visible.map((r) => r.courses.id));
@@ -99,9 +101,14 @@ export default async function DashboardPage({ searchParams }) {
                           <div className="progress-bar"><span style={{ width: `${percent}%` }} /></div>
                           <small>{percent}% complete · {done}/{total} chapters</small>
                         </div>
-                        <Link href={`/learn/${course.slug}`} className="btn btn-primary btn-sm">
-                          {done === 0 ? "Start learning" : percent === 100 ? "Review course" : "Continue learning"}
-                        </Link>
+                        <div className="card-actions">
+                          <Link href={`/learn/${course.slug}`} className="btn btn-primary btn-sm">
+                            {done === 0 ? "Start learning" : percent === 100 ? "Review course" : "Continue learning"}
+                          </Link>
+                          {certByCourse[course.id] && (
+                            <Link href={`/certificates/${certByCourse[course.id]}`} className="btn btn-ghost btn-sm">🎓 Certificate</Link>
+                          )}
+                        </div>
                       </>
                     ) : (
                       <span className="course-link muted-link">Chapters coming soon</span>
