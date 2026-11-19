@@ -69,7 +69,7 @@ export default async function AdminCoursePage({ params, searchParams }) {
         </div>
       </header>
 
-      <Flash saved={flash.saved} error={flash.error} />
+      {flash.at !== "chapters" && <Flash saved={flash.saved} error={flash.error} />}
 
       <section className="admin-card">
         <h2><span className="step-badge">1</span> Course</h2>
@@ -78,6 +78,7 @@ export default async function AdminCoursePage({ params, searchParams }) {
 
       <section className="admin-card" id="chapters">
         <h2><span className="step-badge">2</span> Chapters</h2>
+        {flash.at === "chapters" && <Flash saved={flash.saved} error={flash.error} />}
 
         {chapters.length > 0 && (
           <ol className="chapter-rows">

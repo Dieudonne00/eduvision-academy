@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import FileUpload from "./file-upload";
+import SubmitButton from "./submit-button";
 import { addChapter, updateChapter } from "./actions";
 
 // One chapter = a title + a video (YouTube link) or an audio (uploaded file).
@@ -46,9 +47,9 @@ export default function ChapterForm({ courseId, number, chapter }) {
       )}
 
       <div>
-        <button type="submit" className="btn btn-primary" disabled={uploading}>
-          {uploading ? "Wait for upload…" : editing ? "Save chapter" : `Add chapter ${number}`}
-        </button>
+        <SubmitButton disabled={uploading} pendingText={editing ? "Saving…" : "Adding chapter…"}>
+          {uploading ? "Wait for the upload to finish…" : editing ? "Save chapter" : `Add chapter ${number}`}
+        </SubmitButton>
       </div>
     </form>
   );

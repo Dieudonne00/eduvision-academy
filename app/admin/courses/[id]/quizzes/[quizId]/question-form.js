@@ -3,6 +3,7 @@
 import { useState } from "react";
 import FileUpload from "@/app/admin/file-upload";
 import { addQuestion } from "@/app/admin/quiz-actions";
+import SubmitButton from "@/app/admin/submit-button";
 
 const TYPES = [
   { value: "single", label: "Multiple choice" },
@@ -93,9 +94,9 @@ export default function QuestionForm({ courseId, quizId, number }) {
       </div>
 
       <div>
-        <button type="submit" className="btn btn-primary" disabled={uploading}>
-          {uploading ? "Wait for upload…" : `Add question ${number}`}
-        </button>
+        <SubmitButton disabled={uploading} pendingText="Adding question…">
+          {uploading ? "Wait for the upload to finish…" : `Add question ${number}`}
+        </SubmitButton>
       </div>
     </form>
   );

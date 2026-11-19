@@ -14,9 +14,10 @@ async function adminClient() {
   return createClient();
 }
 
-function back(path, params = {}) {
+// Redirect with a ?saved= / ?error= message; `hash` scrolls back to the section the admin was working in
+function back(path, params = {}, hash = "") {
   const qs = new URLSearchParams(params).toString();
-  redirect(qs ? `${path}?${qs}` : path);
+  redirect(`${path}${qs ? `?${qs}` : ""}${hash ? `#${hash}` : ""}`);
 }
 
 const text = (formData, key) => String(formData.get(key) || "").trim();
@@ -117,7 +118,7 @@ function courseFields(formData) {
 
 export async function createCourse(formData) {
   const { error: invalid, fields } = courseFields(formData);
-  if (invalid) back("/admin/courses", { error: invalid });
+  if (invalid) back("/admin/courses/new", { error: invalid });
 
   const supabase = await adminClient();
 
@@ -134,7 +135,7 @@ export async function createCourse(formData) {
     .insert({ ...fields, slug, currency: "RWF", published: false, position: (count ?? 0) + 1 })
     .select("id")
     .single();
-  if (error) back("/admin/courses", { error: error.message });
+  if (error) back("/admin/courses/new", { error: error.message });
 
   refresh();
   back(`/admin/courses/${course.id}`, { saved: "created" });
@@ -175,16 +176,16 @@ export async function deleteCourse(formData) {
 
 function chapterFields(formData, here) {
   const title = text(formData, "title");
-  if (!title) back(here, { error: "Give the chapter a title." });
+  if (!title) back(here, { ...{ error: "Give the chapter a title." }, at: "chapters" }, "chapters");
 
   const kind = text(formData, "kind") === "audio" ? "audio" : "video";
   if (kind === "video") {
     const youtubeId = parseYouTubeId(formData.get("youtube"));
-    if (!youtubeId) back(here, { error: "Paste the YouTube link of the video (e.g. https://youtu.be/…)." });
+    if (!youtubeId) back(here, { ...{ error: "Paste the YouTube link of the video (e.g. https://youtu.be/…)." }, at: "chapters" }, "chapters");
     return { lesson: { title, kind }, media: { youtube_id: youtubeId, audio_path: null } };
   }
   const audio = text(formData, "audio_path");
-  if (!audio) back(here, { error: "Upload the audio file first, then click Add." });
+  if (!audio) back(here, { ...{ error: "Upload the audio file first, then click Add." }, at: "chapters" }, "chapters");
   return { lesson: { title, kind }, media: { youtube_id: null, audio_path: audio } };
 }
 
@@ -218,16 +219,16 @@ export async function addChapter(formData) {
 
   const { data: row, error } = await supabase
     .from("lessons").insert({ ...lesson, module_id: moduleId, position }).select("id").single();
-  if (error) back(here, { error: error.message });
+  if (error) back(here, { ...{ error: error.message }, at: "chapters" }, "chapters");
 
   const { error: mediaError } = await supabase.from("lesson_media").insert({ lesson_id: row.id, ...media });
   if (mediaError) {
     await supabase.from("lessons").delete().eq("id", row.id);
-    back(here, { error: mediaError.message });
+    back(here, { ...{ error: mediaError.message }, at: "chapters" }, "chapters");
   }
 
   refresh();
-  back(here, { saved: "chapter" });
+  back(here, { ...{ saved: "chapter" }, at: "chapters" }, "chapters");
 }
 
 export async function updateChapter(formData) {
@@ -238,11 +239,11 @@ export async function updateChapter(formData) {
 
   const supabase = await adminClient();
   const { error } = await supabase.from("lessons").update(lesson).eq("id", id);
-  if (error) back(here, { error: error.message });
+  if (error) back(here, { ...{ error: error.message }, at: "chapters" }, "chapters");
   const { error: mediaError } = await supabase.from("lesson_media").upsert({ lesson_id: id, ...media });
 
   refresh();
-  back(here, mediaError ? { error: mediaError.message } : { saved: "chapter-updated" });
+  back(here, { ...(mediaError ? { error: mediaError.message } : { saved: "chapter-updated" }), at: "chapters" }, "chapters");
 }
 
 export async function moveChapter(formData) {
@@ -261,7 +262,7 @@ export async function moveChapter(formData) {
   }
 
   refresh();
-  back(`/admin/courses/${courseId}`);
+  back(`/admin/courses/${courseId}`, {}, "chapters");
 }
 
 export async function deleteChapter(formData) {
@@ -269,5 +270,5 @@ export async function deleteChapter(formData) {
   const supabase = await adminClient();
   const { error } = await supabase.from("lessons").delete().eq("id", text(formData, "id"));
   refresh();
-  back(`/admin/courses/${courseId}`, error ? { error: error.message } : { saved: "deleted" });
+  back(`/admin/courses/${courseId}`, { ...(error ? { error: error.message } : { saved: "deleted" }), at: "chapters" }, "chapters");
 }

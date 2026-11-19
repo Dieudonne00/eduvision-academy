@@ -52,10 +52,11 @@ export default async function QuizEditor({ params, searchParams }) {
         </div>
       </header>
 
-      <Flash saved={flash.saved} error={flash.error} />
+      {!flash.at && <Flash saved={flash.saved} error={flash.error} />}
 
-      <section className="admin-card">
+      <section className="admin-card" id="questions">
         <h2>Questions</h2>
+        {flash.at === "questions" && <Flash saved={flash.saved} error={flash.error} />}
         {questions.length > 0 && (
           <ol className="question-list">
             {questions.map((q, i) => (
@@ -92,8 +93,9 @@ export default async function QuizEditor({ params, searchParams }) {
         </div>
       </section>
 
-      <section className="admin-card">
+      <section className="admin-card" id="settings">
         <h2>Settings</h2>
+        {flash.at === "settings" && <Flash saved={flash.saved} error={flash.error} />}
         <form action={updateQuiz} className="admin-form">
           <input type="hidden" name="id" value={quiz.id} />
           <input type="hidden" name="course_id" value={courseId} />

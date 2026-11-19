@@ -13,9 +13,9 @@ async function adminClient() {
   return createClient();
 }
 
-function back(path, params = {}) {
+function back(path, params = {}, hash = "") {
   const qs = new URLSearchParams(params).toString();
-  redirect(qs ? `${path}?${qs}` : path);
+  redirect(`${path}${qs ? `?${qs}` : ""}${hash ? `#${hash}` : ""}`);
 }
 
 const text = (formData, key) => String(formData.get(key) || "").trim();
@@ -71,13 +71,13 @@ export async function updateQuiz(formData) {
   const publish = formData.get("published") === "on";
   if (publish) {
     const { count } = await supabase.from("questions").select("id", { count: "exact", head: true }).eq("quiz_id", id);
-    if (!count) back(here, { error: "Add at least one question before publishing." });
+    if (!count) back(here, { error: "Add at least one question before publishing.", at: "settings" }, "settings");
   }
 
   const { kind, ...fields } = quizFields(formData);
   const { error } = await supabase.from("quizzes").update({ ...fields, published: publish }).eq("id", id);
   revalidatePath("/", "layout");
-  back(here, error ? { error: error.message } : { saved: "quiz" });
+  back(here, { ...(error ? { error: error.message } : { saved: "quiz" }), at: "settings" }, "settings");
 }
 
 export async function deleteQuiz(formData) {
@@ -94,7 +94,7 @@ export async function addQuestion(formData) {
   const here = `/admin/courses/${courseId}/quizzes/${quizId}`;
   const type = text(formData, "type");
   const prompt = text(formData, "prompt");
-  if (!prompt) back(here, { error: "Write the question." });
+  if (!prompt) back(here, { ...{ error: "Write the question." }, at: "questions" }, "questions");
 
   let options = {};
   let answer;
@@ -104,16 +104,16 @@ export async function addQuestion(formData) {
       const t = text(formData, `option_${i}`);
       if (t) choices.push({ id: LETTERS[i], text: t });
     }
-    if (choices.length < 2) back(here, { error: "Add at least two answer options." });
+    if (choices.length < 2) back(here, { ...{ error: "Add at least two answer options." }, at: "questions" }, "questions");
     const ids = new Set(choices.map((c) => c.id));
     options = { choices };
     if (type === "single") {
       const correct = text(formData, "correct");
-      if (!ids.has(correct)) back(here, { error: "Choose which option is correct." });
+      if (!ids.has(correct)) back(here, { ...{ error: "Choose which option is correct." }, at: "questions" }, "questions");
       answer = { correct };
     } else {
       const correct = formData.getAll("correct_multi").map(String).filter((c) => ids.has(c));
-      if (!correct.length) back(here, { error: "Tick at least one correct option." });
+      if (!correct.length) back(here, { ...{ error: "Tick at least one correct option." }, at: "questions" }, "questions");
       answer = { correct };
     }
   } else if (type === "true_false") {
@@ -121,10 +121,10 @@ export async function addQuestion(formData) {
     answer = { correct: text(formData, "correct_tf") === "false" ? "false" : "true" };
   } else if (type === "fill_blank") {
     const accepted = text(formData, "accepted").split(/[\n,]/).map((s) => s.trim()).filter(Boolean);
-    if (!accepted.length) back(here, { error: "Write the correct answer (separate alternatives with commas)." });
+    if (!accepted.length) back(here, { ...{ error: "Write the correct answer (separate alternatives with commas)." }, at: "questions" }, "questions");
     answer = { accepted };
   } else {
-    back(here, { error: "Choose a question type." });
+    back(here, { ...{ error: "Choose a question type." }, at: "questions" }, "questions");
   }
 
   const points = Math.max(1, Number(text(formData, "points") || 1));
@@ -135,18 +135,18 @@ export async function addQuestion(formData) {
     .insert({ quiz_id: quizId, type, prompt, options, points, audio_path: text(formData, "audio_path") || null, position: count ?? 0 })
     .select("id")
     .single();
-  if (error) back(here, { error: error.message });
+  if (error) back(here, { ...{ error: error.message }, at: "questions" }, "questions");
 
   const { error: keyError } = await supabase
     .from("question_keys")
     .insert({ question_id: q.id, answer, explanation: text(formData, "explanation") });
   if (keyError) {
     await supabase.from("questions").delete().eq("id", q.id);
-    back(here, { error: keyError.message });
+    back(here, { ...{ error: keyError.message }, at: "questions" }, "questions");
   }
 
   revalidatePath(here);
-  back(here, { saved: "question" });
+  back(here, { ...{ saved: "question" }, at: "questions" }, "questions");
 }
 
 export async function deleteQuestion(formData) {
@@ -156,5 +156,5 @@ export async function deleteQuestion(formData) {
   const { error } = await supabase.from("questions").delete().eq("id", text(formData, "id"));
   const here = `/admin/courses/${courseId}/quizzes/${quizId}`;
   revalidatePath(here);
-  back(here, error ? { error: error.message } : { saved: "deleted" });
+  back(here, { ...(error ? { error: error.message } : { saved: "deleted" }), at: "questions" }, "questions");
 }

@@ -3,15 +3,33 @@
 import { useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
-// Resize an image in the browser so thumbnails stay small and fast (max 1200px wide, WebP).
+const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+
+// Resize an image in the browser so thumbnails stay small and fast (max 1200px wide).
+// Returns null if this browser can't (e.g. iPhone HEIC photos); the caller then uploads the original.
 async function resizeImage(file, maxWidth = 1200) {
-  const bitmap = await createImageBitmap(file);
-  const scale = Math.min(1, maxWidth / bitmap.width);
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.round(bitmap.width * scale);
-  canvas.height = Math.round(bitmap.height * scale);
-  canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-  return new Promise((resolve) => canvas.toBlob(resolve, "image/webp", 0.85));
+  try {
+    const img = await new Promise((resolve, reject) => {
+      const el = new Image();
+      el.onload = () => resolve(el);
+      el.onerror = reject;
+      el.src = URL.createObjectURL(file);
+    });
+    const scale = Math.min(1, maxWidth / img.naturalWidth);
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(img.naturalWidth * scale);
+    canvas.height = Math.round(img.naturalHeight * scale);
+    canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+    URL.revokeObjectURL(img.src);
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.85));
+    return blob && blob.size > 0 ? blob : null;
+  } catch {
+    return null;
+  }
+}
+
+function randomId() {
+  return globalThis.crypto?.randomUUID?.() || `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
 // Uploads straight from the browser to Supabase Storage (so big files never pass through our server)
@@ -21,7 +39,7 @@ async function resizeImage(file, maxWidth = 1200) {
 export default function FileUpload({ kind, name, folder = "", defaultValue = "", onBusyChange }) {
   const isImage = kind === "image";
   const bucket = isImage ? "thumbnails" : "audio";
-  const maxMB = isImage ? 5 : 50;
+  const maxMB = isImage ? 25 : 50; // big photos are shrunk before upload
 
   const input = useRef(null);
   const [value, setValue] = useState(defaultValue);
@@ -46,14 +64,33 @@ export default function FileUpload({ kind, name, folder = "", defaultValue = "",
 
     setBusyState(true);
     try {
-      const body = isImage ? await resizeImage(file) : file;
-      const ext = isImage ? "webp" : (file.name.split(".").pop() || "mp3").toLowerCase();
-      const path = `${folder ? `${folder}/` : ""}${crypto.randomUUID()}.${ext}`;
-      const contentType = isImage ? "image/webp" : file.type || "audio/mpeg";
+      let body = file;
+      let contentType = file.type || (isImage ? "image/jpeg" : "audio/mpeg");
+      let ext = (file.name.split(".").pop() || (isImage ? "jpg" : "mp3")).toLowerCase();
 
+      if (isImage) {
+        const resized = await resizeImage(file);
+        if (resized) {
+          body = resized;
+          contentType = "image/jpeg";
+          ext = "jpg";
+        } else if (!IMAGE_TYPES.includes(file.type) || file.size > 5 * 1024 * 1024) {
+          throw new Error("This photo format can't be used. Please choose a JPG or PNG image (under 5 MB).");
+        }
+      }
+
+      const path = `${folder ? `${folder}/` : ""}${randomId()}.${ext}`;
       const supabase = createClient();
       const { error: upErr } = await supabase.storage.from(bucket).upload(path, body, { contentType, upsert: false });
-      if (upErr) throw upErr;
+      if (upErr) {
+        if (/mime type/i.test(upErr.message)) {
+          throw new Error(isImage ? "Please choose a JPG, PNG or WebP image." : "Please choose an MP3, M4A, WAV or OGG audio file.");
+        }
+        if (/row-level security|unauthorized|jwt/i.test(upErr.message)) {
+          throw new Error("Your login has expired. Please refresh the page and log in again.");
+        }
+        throw upErr;
+      }
 
       if (isImage) {
         setValue(supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl);

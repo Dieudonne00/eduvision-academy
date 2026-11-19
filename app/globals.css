@@ -627,6 +627,15 @@ textarea { resize: vertical; }
 .danger-zone { border-color: #f5c2c2; }
 select { appearance: auto; }
 
+.spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin .7s linear infinite; vertical-align: -2px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.req { color: var(--error); }
+.steps-mini { display: flex; gap: 8px; flex-wrap: wrap; list-style: none; padding: 0; margin: 0 0 18px; }
+.steps-mini li { display: flex; align-items: center; gap: 8px; padding: .45rem .9rem .45rem .45rem; border-radius: 999px; background: #fff; border: 1px solid var(--line); font-weight: 600; font-size: .88rem; color: var(--muted); }
+.steps-mini li span { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--tint); font-size: .8rem; }
+.steps-mini li.active { border-color: var(--orange); color: var(--ink); }
+.steps-mini li.active span { background: var(--orange); color: #fff; }
+
 /* Payments (admin) */
 .tab-count { display: inline-grid; place-items: center; min-width: 20px; height: 20px; margin-left: .4rem; padding: 0 6px; border-radius: 99px; background: var(--orange); color: #fff; font-size: .72rem; font-weight: 800; }
 .admin-nav .tab-count { margin-left: auto; }
