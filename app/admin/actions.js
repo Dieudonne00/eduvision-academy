@@ -17,7 +17,7 @@ async function adminClient() {
 // Redirect with a ?saved= / ?error= message; `hash` scrolls back to the section the admin was working in
 function back(path, params = {}, hash = "") {
   const qs = new URLSearchParams(params).toString();
-  redirect(`${path}${qs ? `?${qs}` : ""}${hash ? `#${hash}` : ""}`);
+  redirect(`${path}${qs ? `${path.includes("?") ? "&" : "?"}${qs}` : ""}${hash ? `#${hash}` : ""}`);
 }
 
 const text = (formData, key) => String(formData.get(key) || "").trim();
