@@ -558,6 +558,8 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--t
 .admin-head p { margin: 0; }
 .admin-flash { margin-bottom: 16px; }
 
+/* Sections reached by #links after saving land below the sticky header, not under it */
+.admin-card[id], .add-chapter, .chapter-form, .question-form { scroll-margin-top: 96px; }
 .admin-card { padding: 24px; margin-bottom: 20px; background: #fff; border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow-sm); }
 .admin-card h2 { font-size: 1.15rem; margin-bottom: 1rem; }
 .admin-card.soon { border-style: dashed; box-shadow: none; }
