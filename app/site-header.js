@@ -50,7 +50,7 @@ export default async function SiteHeader() {
           )}
         </div>
 
-        <MobileNav links={links} signedIn={Boolean(session)} isAdmin={isAdmin} />
+        <MobileNav links={links} signedIn={Boolean(session)} isAdmin={isAdmin} name={session?.profile?.full_name || session?.user?.email || ""} />
       </div>
     </header>
   );

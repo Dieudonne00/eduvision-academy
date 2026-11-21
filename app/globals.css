@@ -1129,3 +1129,7 @@ select { appearance: auto; }
 .course-card .pill { align-self: flex-start; margin-bottom: .4rem; }
 .card-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .muted-link { color: var(--muted); }
+.mobile-who { padding: .2rem .25rem .4rem; font-size: .88rem; color: var(--muted); overflow-wrap: anywhere; }
+.mobile-who strong { color: var(--ink); }
+.mobile-panel form { display: block; }
+.mobile-logout { width: 100%; }

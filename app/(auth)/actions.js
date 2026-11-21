@@ -1,6 +1,7 @@
 "use server";
 
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { normalizePhone } from "@/lib/phone";
@@ -56,12 +57,17 @@ export async function signIn(_prev, formData) {
     if (message === "Email not confirmed") message = "Please confirm your email first. Check your inbox for our link.";
     return { error: message, values: { email } };
   }
+  revalidatePath("/", "layout"); // every page re-renders as signed in
   redirect(safeNext(formData.get("next")));
 }
 
 export async function signOut() {
   const supabase = await createClient();
-  await supabase.auth.signOut();
+  await supabase.auth.signOut().catch(() => {});
+  // Remove the login cookies even if Supabase could not be reached
+  const store = await cookies();
+  for (const c of store.getAll()) if (c.name.startsWith("sb-")) store.delete(c.name);
+  revalidatePath("/", "layout");
   redirect("/");
 }
 

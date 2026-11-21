@@ -4,9 +4,10 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Icon from "./_components/icon";
+import { signOut } from "./(auth)/actions";
 
 // Hamburger menu for phones; the desktop nav is hidden below 900px.
-export default function MobileNav({ links, signedIn, isAdmin }) {
+export default function MobileNav({ links, signedIn, isAdmin, name }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
 
@@ -32,8 +33,12 @@ export default function MobileNav({ links, signedIn, isAdmin }) {
           <hr />
           {signedIn ? (
             <>
+              {name && <span className="mobile-who">Signed in as <strong>{name}</strong></span>}
               {isAdmin && <Link href="/admin">Admin</Link>}
               <Link href="/dashboard" className="btn btn-primary">My learning</Link>
+              <form action={signOut}>
+                <button type="submit" className="btn btn-ghost btn-block mobile-logout">Log out</button>
+              </form>
             </>
           ) : (
             <>
