@@ -122,6 +122,13 @@ export async function createCourse(formData) {
 
   const supabase = await adminClient();
 
+  // Repeated clicks (slow connection) must not create copies: reuse a course with the
+  // same title created in the last 10 minutes.
+  const since = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+  const { data: recent } = await supabase
+    .from("courses").select("id").eq("title", fields.title).gte("created_at", since).limit(1).maybeSingle();
+  if (recent) back(`/admin/courses/${recent.id}`, { saved: "created" });
+
   // Unique web address: german, german-2…
   const base = slugify(fields.title);
   const { data: taken } = await supabase.from("courses").select("slug").like("slug", `${base}%`);

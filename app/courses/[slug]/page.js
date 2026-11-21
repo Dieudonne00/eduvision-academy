@@ -5,6 +5,7 @@ import Icon from "@/app/_components/icon";
 import { getCourseOutline, formatPrice } from "@/lib/courses";
 import { getSession } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { site } from "@/lib/site";
 
 export async function generateMetadata({ params }) {
   const course = await getCourseOutline((await params).slug);
@@ -58,7 +59,14 @@ export default async function CoursePage({ params }) {
             <div className="enroll-body">
               <span className="enroll-label">Course fee</span>
               <strong className="enroll-price">{price || "Price on request"}</strong>
-              {enrolled ? (
+              {chapters.length === 0 ? (
+                <>
+                  <span className="soon-tag inline big">Coming soon</span>
+                  <p className="small muted">The chapters for this course are being recorded. Message us to be told when it opens.</p>
+                  <a href={`${site.whatsappHref}?text=${encodeURIComponent(`Hello EduVision Academy, please tell me when the ${course.title} course opens.`)}`}
+                    target="_blank" rel="noopener" className="btn btn-ghost btn-lg btn-block">Notify me on WhatsApp</a>
+                </>
+              ) : enrolled ? (
                 <Link href={`/learn/${course.slug}`} className="btn btn-primary btn-lg btn-block">Continue learning</Link>
               ) : (
                 <Link href={`/checkout/${course.slug}`} className="btn btn-primary btn-lg btn-block">Enroll now</Link>

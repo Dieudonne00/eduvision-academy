@@ -21,11 +21,12 @@ export default async function CheckoutPage({ params, searchParams }) {
   const supabase = await createClient();
   const { data: row } = await supabase
     .from("courses")
-    .select("id, slug, title, description, category, icon, accent, cover_url, price, currency")
+    .select("id, slug, title, description, category, icon, accent, cover_url, price, currency, modules (lessons (id))")
     .eq("slug", slug)
     .maybeSingle();
   if (!row) notFound();
   const course = withDisplay(row);
+  const chapterCount = (row.modules || []).reduce((n, m) => n + (m.lessons?.length || 0), 0);
 
   const [{ data: enrollment }, settings, payments, feeDue] = await Promise.all([
     supabase.from("enrollments").select("status").eq("course_id", course.id).eq("user_id", user.id).maybeSingle(),
@@ -46,7 +47,20 @@ export default async function CheckoutPage({ params, searchParams }) {
   );
 
   let body;
-  if (enrollment?.status === "active") {
+  if (chapterCount === 0 && enrollment?.status !== "active") {
+    // Never take money for a course that has nothing to learn yet
+    body = (
+      <div className="status-box pending">
+        <Icon name="clock" size={28} />
+        <div>
+          <h3>This course is coming soon</h3>
+          <p>We&apos;re recording the chapters now. Message us and we&apos;ll tell you the moment it opens.</p>
+        </div>
+        <a href={`${site.whatsappHref}?text=${encodeURIComponent(`Hello EduVision Academy, please tell me when the ${course.title} course opens.`)}`}
+          target="_blank" rel="noopener" className="btn btn-primary"><WhatsAppIcon size={18} /> Notify me</a>
+      </div>
+    );
+  } else if (enrollment?.status === "active") {
     body = (
       <div className="status-box success">
         <Icon name="checkCircle" size={28} />

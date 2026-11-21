@@ -13,7 +13,7 @@ export default async function SiteFooter() {
       <div className="container footer-grid">
         <div className="footer-brand">
           <div className="footer-logo">
-            <Image src={logo} alt="EduVision Academy" width={180} />
+            <Image src={logo} alt="EduVision Academy" width={180} loading="eager" />
           </div>
           <p>
             School of English and Communication: certification, fluency and public speaking,

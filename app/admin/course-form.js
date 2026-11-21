@@ -23,7 +23,7 @@ export default function CourseForm({ course }) {
 
         <div className="course-form-fields">
           <label>
-            Title <span className="req">*</span>
+            <span>Title <span className="req">*</span></span>
             <input name="title" defaultValue={course?.title} placeholder="e.g. German for Beginners" required />
           </label>
           <label>
